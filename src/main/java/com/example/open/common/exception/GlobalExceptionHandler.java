@@ -1,4 +1,4 @@
-package com.example.open.exception;
+package com.example.open.common.exception;
 
 import com.example.open.common.dto.ErrorResponse;
 import com.example.open.common.service.ProfileCheckerService;

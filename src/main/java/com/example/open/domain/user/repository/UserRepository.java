@@ -24,10 +24,10 @@ public class UserRepository {
         return namedParameterJdbcTemplate.query(sql, new BeanPropertyRowMapper<>(User.class));
     }
 
-    public Optional<User> findById(Long id) {
+    public Optional<User> findById(String id) {
         String sql = "SELECT * FROM users WHERE id = :id";
 
-        SqlParameterSource param = new MapSqlParameterSource().addValue("id", id);
+        SqlParameterSource param = new MapSqlParameterSource().addValue("id", id, Types.VARCHAR);
         List<User> users = namedParameterJdbcTemplate.query(sql, param, new BeanPropertyRowMapper<>(User.class));
         return users.stream().findFirst();
     }

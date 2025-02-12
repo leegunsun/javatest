@@ -1,5 +1,9 @@
 package com.example.open.domain.user.controller;
 
+import com.example.open.common.dto.BodyResponse;
+import com.example.open.common.dto.CustomResponse;
+import com.example.open.common.dto.ResponseUtil;
+import com.example.open.common.dto.TestDTO;
 import com.example.open.domain.user.entity.User;
 import com.example.open.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -17,17 +21,20 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(userService.getAllUsers());
+    public CustomResponse<List<User>> getAllUsers() {
+        return ResponseUtil.success(userService.getAllUsers());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
+    public ResponseEntity<BodyResponse<TestDTO>> getUserById(@PathVariable String id) {
         return userService.getUserById(id)
-                .map(ResponseEntity::ok)
+                .map(ele -> new BodyResponse<TestDTO>(0, "Success", new TestDTO("example", 100)).toResponseEntity(HttpStatus.OK))  // ✅ 수정됨
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     }
 
+//        return userService.getUserById(id)
+//                .map(ResponseEntity::ok)
+//                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));
     @PostMapping
     public ResponseEntity<String> createUser(@RequestBody User user) {
         userService.createUser(user);
