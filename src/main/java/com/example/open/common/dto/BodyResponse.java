@@ -13,8 +13,4 @@ public class BodyResponse<T> {
     private final int status;
     private final String message;
     private T data;
-
-    public ResponseEntity<BodyResponse<T>> toResponseEntity(HttpStatus status) {
-        return ResponseEntity.status(status).body(this);
-    }
 }
