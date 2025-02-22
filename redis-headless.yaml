@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  clusterIP: None  # Headless Service로 설정하여 StatefulSet의 각 Pod에 직접 접근 가능
+  ports:
+    - port: 6379
+      targetPort: 6379
+  selector:
+    app: redis
