@@ -4,7 +4,7 @@ metadata:
   name: redis
 spec:
   serviceName: "redis"
-  replicas: 1  # 🚨 오토 스케일링을 적용할 경우 Redis Cluster 고려 필요
+  replicas: 3
   selector:
     matchLabels:
       app: redis
@@ -26,7 +26,19 @@ spec:
               cpu: "500m"
               memory: "512Mi"
 
-          # ✅ Liveness Probe (Redis가 정상 실행 중인지 확인)
+          # ✅ Redis 설정 파일 적용
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+            - name: redis-config
+              mountPath: /etc/redis/redis.conf
+              subPath: redis.conf
+
+          args:
+            - "redis-server"
+            - "/etc/redis/redis.conf"
+
+          # ✅ Liveness Probe (Redis 정상 상태 확인)
           livenessProbe:
             tcpSocket:
               port: 6379
@@ -34,10 +46,25 @@ spec:
             periodSeconds: 5
             failureThreshold: 3
 
-          # ✅ Readiness Probe (Redis가 요청을 받을 준비가 되었는지 확인)
+          # ✅ Readiness Probe (Redis 준비 상태 확인)
           readinessProbe:
             tcpSocket:
               port: 6379
             initialDelaySeconds: 5
             periodSeconds: 5
             failureThreshold: 3
+
+      # ✅ ConfigMap 마운트
+      volumes:
+        - name: redis-config
+          configMap:
+            name: redis-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

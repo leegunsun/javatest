@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: redis-cluster-setup
+spec:
+  template:
+    spec:
+      containers:
+        - name: redis-cluster-setup
+          image: redis:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              sleep 10;
+              echo "Creating Redis Cluster...";
+              redis-cli --cluster create \
+                redis-0.redis:6379 \
+                redis-1.redis:6379 \
+                redis-2.redis:6379 \
+                --cluster-replicas 0 --cluster-yes
+      restartPolicy: Never
