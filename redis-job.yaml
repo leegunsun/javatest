@@ -5,17 +5,21 @@ metadata:
 spec:
   template:
     spec:
+      restartPolicy: Never
       containers:
         - name: redis-cluster-setup
           image: redis:latest
           command: ["/bin/sh", "-c"]
           args:
             - |
+              echo "Waiting for Redis nodes to be ready..."
               sleep 10;
-              echo "Creating Redis Cluster...";
+              
+              echo "Creating Redis Cluster..."
               redis-cli --cluster create \
                 redis-0.redis:6379 \
                 redis-1.redis:6379 \
                 redis-2.redis:6379 \
                 --cluster-replicas 0 --cluster-yes
-      restartPolicy: Never
+              
+              echo "Redis Cluster setup complete."

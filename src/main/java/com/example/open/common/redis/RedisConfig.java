@@ -10,10 +10,11 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 @Configuration
 public class RedisConfig {
-
+//
 //    @Bean
 //    public RedisConnectionFactory redisConnectionFactory() {
 //        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration("localhost", 6379);
@@ -30,24 +31,21 @@ public class RedisConfig {
 //        return template;
 //    }
 
+
 @Bean
-public RedisClusterConfiguration redisClusterConfiguration() {
-    return new RedisClusterConfiguration(Arrays.asList(
-            "10.1.0.45:6379",
-            "10.1.0.46:6379",
-            "10.1.0.47:6379"
-    ));
+public RedisConnectionFactory redisConnectionFactory() {
+    // 외부 접근 가능한 엔드포인트를 지정합니다.
+    RedisClusterConfiguration clusterConfig = new RedisClusterConfiguration(
+            Collections.singletonList("localhost:31971")
+    );
+    // 클러스터 모드에서의 추가 설정이 필요한 경우 여기에 추가합니다.
+    return new LettuceConnectionFactory(clusterConfig);
 }
 
     @Bean
-    public LettuceConnectionFactory redisConnectionFactory(RedisClusterConfiguration redisClusterConfiguration) {
-        return new LettuceConnectionFactory(redisClusterConfiguration);
-    }
-
-    @Bean
-    public RedisTemplate<String, Object> redisTemplate(LettuceConnectionFactory redisConnectionFactory) {
-        RedisTemplate<String, Object> template = new RedisTemplate<>();
-        template.setConnectionFactory(redisConnectionFactory);
+    public RedisTemplate<String, String> redisTemplate() {
+        RedisTemplate<String, String> template = new RedisTemplate<>();
+        template.setConnectionFactory(redisConnectionFactory());
         template.setKeySerializer(new StringRedisSerializer());
         template.setValueSerializer(new StringRedisSerializer());
         return template;

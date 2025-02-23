@@ -37,6 +37,8 @@ spec:
           args:
             - "redis-server"
             - "/etc/redis/redis.conf"
+            - "--cluster-enabled"
+            - "yes"
 
           # ✅ Liveness Probe (Redis 정상 상태 확인)
           livenessProbe:

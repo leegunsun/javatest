@@ -1,13 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-external
+  name: redis-lb
+  labels:
+    app: redis
 spec:
-  type: NodePort  # 외부에서 접근 가능하도록 설정
+  type: LoadBalancer  # LoadBalancer를 사용하여 외부 접근 가능하도록 설정
+#  clusterIP: None  # ✅ 반드시 None으로 설정 (Headless Service)
+  ports:
+    - port: 6379      # Redis 기본 포트
+      targetPort: 6379
   selector:
     app: redis
-  ports:
-    - protocol: TCP
-      port: 6379  # 내부 Redis 포트
-      targetPort: 6379
-      nodePort: 30079  # ❗ 사용 가능한 NodePort 범위(30000-32767)
