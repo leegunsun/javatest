@@ -1,5 +1,6 @@
 package com.example.open;
 
+import com.example.open.common.utile.CustomErrorCode;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
