@@ -1,8 +1,6 @@
 package com.example.open.common.utile;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -17,7 +15,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.regex.Pattern;
 
-@Component
+@Component("errorCodeRegistry")
 @RequiredArgsConstructor
 public class ErrorCodeRegistry implements ApplicationRunner {
 
