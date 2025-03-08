@@ -25,7 +25,7 @@ public class TodoController {
     @GetMapping("/set")
     public String setSession(HttpSession session, @RequestParam String value) {
         session.setAttribute("key", value);
-        customErrorTest.execute();
+//        customErrorTest.execute();
         return "세션 저장됨: " + value;
     }
 
