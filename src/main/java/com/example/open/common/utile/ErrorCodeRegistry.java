@@ -77,7 +77,7 @@ public class ErrorCodeRegistry implements ApplicationRunner {
 
     private void processEnumClass(String className) {
         try {
-            Class<?> clazz = Class.forName(className);
+            Class<?> clazz = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
             Enum<?>[] enumConstants = (Enum<?>[]) clazz.getEnumConstants();
 
             Method getCodeMethod = ReflectionUtils.findMethod(clazz, "getCode");
