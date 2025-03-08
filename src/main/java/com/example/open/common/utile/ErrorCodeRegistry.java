@@ -17,13 +17,20 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class ErrorCodeRegistry implements ApplicationRunner {
 
-    @Autowired
-    private DefaultListableBeanFactory beanFactory;
+    @RequiredArgsConstructor
+    private static class ClassHistory {
+        private final String className;
+        private final String constName;
+    }
 
-    private static final Map<Integer, String> codes = new HashMap<>();
-    String basePackage = "com.example.open";
+    private final DefaultListableBeanFactory beanFactory;
+    private static final String BEAN_NAME = "errorCodeRegistry";
+    
+    private static final Map<Integer ,ClassHistory> codes = new HashMap<>();
+    String basePackage = "com.example.open.common.utile";
 
     public void init() {
 
@@ -32,6 +39,13 @@ public class ErrorCodeRegistry implements ApplicationRunner {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
             Arrays.stream(resolver.getResources("classpath*:" + path + "/**/*.class"))
+                    .filter(resource -> {
+                        try {
+                            return resource.getURL().toString().endsWith(".class");
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
                     .map(resource -> {
                         try {
                             return extractClassName(resource.getURL().toString(), path);
@@ -39,8 +53,9 @@ public class ErrorCodeRegistry implements ApplicationRunner {
                             throw new RuntimeException(e);
                         }
                     })
-                    .filter(this::isEnumClass)  // ✅ 추가된 'Enum' 필터링 로직
+                    .filter(this::isEnumClass)
                     .forEach(this::loadEnumClass);
+
 
         } catch (IOException e) {
             throw new RuntimeException("패키지 스캔 실패: " + basePackage, e);
@@ -56,7 +71,7 @@ public class ErrorCodeRegistry implements ApplicationRunner {
     // ✅ 'Enum' 클래스 여부 확인
     private boolean isEnumClass(String className) {
         try {
-            Class<?> clazz = Class.forName(className);
+            Class<?> clazz = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
             return clazz.isEnum();
         } catch (ClassNotFoundException e) {
             return false; // 존재하지 않는 클래스는 무시
@@ -98,12 +113,21 @@ public class ErrorCodeRegistry implements ApplicationRunner {
             }
 
             if (codes.containsKey(code)) {
-                throw new ExceptionInInitializerError(
-                        "중복된 에러 코드 발견: " + code + " (" + clazz.getSimpleName() + ")"
+                String existingConstName = codes.get(code).constName; // 기존에 등록된 상수명
+                String existingConstClass = codes.get(code).className; // 기존에 등록된 상수명
+
+                String errorMessage = String.format(
+                        "❗ [중복 오류코드 발견] ❗ " +
+                                "- 중복된 열거형 상수: %s ( %s )" +
+                                "- 오류코드: %s " +
+                                "- 중복이 감지된 상수: %s ( %s )",
+                        existingConstClass, existingConstName, code, clazz.getSimpleName(), errorCode.name()
                 );
+
+                throw new ExceptionInInitializerError(errorMessage);
             }
 
-            codes.put(code, errorCode.name());
+            codes.put(code, new ClassHistory(clazz.getSimpleName(), errorCode.name()) );
         }
     }
 
@@ -114,16 +138,19 @@ public class ErrorCodeRegistry implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        checkBeanStatus(beanFactory, "errorCodeRegistry");
+        checkBeanStatus(beanFactory, BEAN_NAME);
         init();
 
-        // 빈 제거
-        if (beanFactory.containsBeanDefinition("errorCodeRegistry")) {
-            beanFactory.removeBeanDefinition("errorCodeRegistry");
+        // 빈 제거 (안전한 순서)
+        if (beanFactory.containsBeanDefinition(BEAN_NAME)) {
+            if (beanFactory.containsSingleton(BEAN_NAME)) {
+                beanFactory.destroySingleton(BEAN_NAME); // 1. 싱글톤 빈 제거
+            }
+            beanFactory.removeBeanDefinition(BEAN_NAME); // 2. 빈 정의 제거
             System.out.println("❌ CustomErrorTest 빈이 제거되었습니다.");
         }
 
         // 빈 제거 후 상태 확인
-        checkBeanStatus(beanFactory, "errorCodeRegistry");
+        checkBeanStatus(beanFactory, BEAN_NAME);
     }
 }

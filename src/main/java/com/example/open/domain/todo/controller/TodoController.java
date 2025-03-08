@@ -1,13 +1,9 @@
 package com.example.open.domain.todo.controller;
 
-import com.example.open.common.utile.CustomErrorCode;
-import com.example.open.common.utile.CustomErrorTest;
 import com.example.open.domain.todo.service.TodoService;
 import com.example.open.domain.todo.entity.Todo;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,12 +16,11 @@ import java.util.Optional;
 public class TodoController {
 
     private final TodoService todoService;
-    private final CustomErrorTest customErrorTest;
+
 
     @GetMapping("/set")
     public String setSession(HttpSession session, @RequestParam String value) {
         session.setAttribute("key", value);
-//        customErrorTest.execute();
         return "세션 저장됨: " + value;
     }
 
