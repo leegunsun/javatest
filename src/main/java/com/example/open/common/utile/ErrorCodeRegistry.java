@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+
 @Component
 @RequiredArgsConstructor
 public class ErrorCodeRegistry implements ApplicationRunner {
@@ -25,7 +26,6 @@ public class ErrorCodeRegistry implements ApplicationRunner {
     private final DefaultListableBeanFactory beanFactory;
     private static final String BEAN_NAME = "errorCodeRegistry";
     private static final Map<Integer, ClassHistory> codes = new HashMap<>();
-    private final String basePackage = "com.example.open.common.utile";
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -36,6 +36,7 @@ public class ErrorCodeRegistry implements ApplicationRunner {
     }
 
     public void init() {
+        String basePackage = "com.example.open.common.utile";
         String path = basePackage.replace('.', '/');
         try {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
