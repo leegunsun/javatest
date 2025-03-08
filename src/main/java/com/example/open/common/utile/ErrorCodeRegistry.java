@@ -20,11 +20,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ErrorCodeRegistry implements ApplicationRunner {
 
-    @RequiredArgsConstructor
-    private static class ClassHistory {
-        private final String className;
-        private final String constName;
-    }
+    private record ClassHistory (String className, String constName) { }
 
     private final DefaultListableBeanFactory beanFactory;
     private static final String BEAN_NAME = "errorCodeRegistry";
@@ -117,12 +113,12 @@ public class ErrorCodeRegistry implements ApplicationRunner {
                 String existingConstClass = codes.get(code).className; // 기존에 등록된 상수명
 
                 String errorMessage = String.format(
-                        "❗ [중복 오류코드 발견] ❗ " +
-                                "- 중복된 열거형 상수: %s ( %s )" +
-                                "- 오류코드: %s " +
-                                "- 중복이 감지된 상수: %s ( %s )",
-                        existingConstClass, existingConstName, code, clazz.getSimpleName(), errorCode.name()
-                );
+                        "❗ [중복으로 설정된 오류코드 발견] ❗ " +
+                                "%s ( %s ) " +
+                                "- %s ( %s ) " +
+                                ": 중복된 오류코드: %s ",
+                        existingConstClass, existingConstName, clazz.getSimpleName(), errorCode.name(), code
+                        );
 
                 throw new ExceptionInInitializerError(errorMessage);
             }
