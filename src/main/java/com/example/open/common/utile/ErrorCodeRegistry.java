@@ -14,6 +14,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component("errorCodeRegistry")
 @RequiredArgsConstructor
@@ -104,14 +105,19 @@ public class ErrorCodeRegistry implements ApplicationRunner {
     // ANSI 색상 코드 정의
     private static final String RED = "\u001B[31m";
     private static final String BRIGHT_RED = "\u001B[38;5;196m"; // 강렬한 빨간색
+    private static final String BOLD_UNDERLINE_BRIGHT_RED = "\u001B[1;4;38;5;196m";
+
+    private static final String BOLD = "\u001B[1m";
+
     private static final String MAGENTA = "\u001B[35m";
     private static final String GREEN = "\u001B[32m";
     private static final String RESET = "\u001B[0m";
     private static final String PINK_256 = "\u001B[38;5;206m"; // 밝은 핑크
 
     private void validateDuplicateErrors() {
+//        List<String> classNames = new ArrayList<>();
         if (!duplicateErrors.isEmpty()) {
-            System.out.printf("%-31s❌❌❌ %-30s 중복 오류코드 발견 목록 %-22s ❌❌❌%n%s",
+            System.out.printf("%n%-31s❌❌❌ %-30s 중복 오류코드 발견 목록 %-30s ❌❌❌%n%s",
                     RED, "", "", RESET);
 
             printSeparator();
@@ -120,8 +126,10 @@ public class ErrorCodeRegistry implements ApplicationRunner {
             printSeparator();
 
             for (DuplicateErrorDetails errorMessage : duplicateErrors) {
+//                classNames.add(errorMessage.firstEnumClass);
+//                classNames.add(errorMessage.secondEnumClass);
                 printRow(List.of(
-                        BRIGHT_RED + errorMessage.errorCode + RESET,
+                        BOLD_UNDERLINE_BRIGHT_RED + errorMessage.errorCode + RESET,
                         MAGENTA + errorMessage.firstEnumClass + RESET,
                         MAGENTA + errorMessage.firstEnumConstant + RESET,
                         PINK_256 + errorMessage.secondEnumClass + RESET,
@@ -130,6 +138,13 @@ public class ErrorCodeRegistry implements ApplicationRunner {
             }
 
             printSeparator();
+
+//            String result = classNames.stream()
+//                    .distinct()  // 중복 제거
+//                    .collect(Collectors.joining(", "));  // 문자열 변환
+//
+//            System.out.printf("%n%s 확인이 필요한 클래스 :  " + result + " %-10s %n%s",
+//                    RED, "", "", RESET);
         }
     }
 
