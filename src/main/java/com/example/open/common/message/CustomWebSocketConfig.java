@@ -13,14 +13,12 @@ public class CustomWebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");  // 메시지를 구독하는 경로
+        config.enableSimpleBroker("/queue", "/topic"); // 1:1 대화와 그룹 대화 지원
         config.setApplicationDestinationPrefixes("/app");  // 메시지를 발행하는 경로
     }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/chat")      // 웹소켓 연결을 위한 엔드포인트
-                .setAllowedOriginPatterns("*")
-                .withSockJS();             // SockJS 사용 (웹소켓을 지원하지 않는 브라우저 대응)
+        registry.addEndpoint("/ws").setHandshakeHandler(new CustomHandshakeHandler()).withSockJS();
     }
 }
