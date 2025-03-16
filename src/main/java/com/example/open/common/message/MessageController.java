@@ -17,6 +17,16 @@ public class MessageController {
 
     private final SimpMessagingTemplate messagingTemplate;
 
+    @MessageMapping("/chat.joinRoom")
+    @SendTo("/topic/{roomName}")
+    public ChatMessage joinRoom(@Payload ChatMessage chatMessage,
+                                SimpMessageHeaderAccessor headerAccessor) {
+        String roomName = chatMessage.getGroupName();
+        headerAccessor.getSessionAttributes().put("roomName", roomName);
+        return chatMessage;
+    }
+
+
     @MessageMapping("/chat.send")     // 클라이언트에서 '/app/chat.send'로 전송 시 처리
     @SendTo("/topic/public")          // 구독자들이 '/topic/public'을 구독하고 있다면 전달
     public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
