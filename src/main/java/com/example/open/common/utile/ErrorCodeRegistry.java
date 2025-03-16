@@ -27,6 +27,8 @@ public class ErrorCodeRegistry implements ApplicationRunner {
     private static final String BEAN_NAME = "errorCodeRegistry";
     private static final Map<Integer, ErrorClassInfo> codes = new HashMap<>();
     private static final List<DuplicateErrorDetails> duplicateErrors = new ArrayList<>();  // 중복된 오류 리스트 추가
+    private static final String basePackage = "com.example.open.common.utile";
+    private String locationPattern = "";
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -38,11 +40,11 @@ public class ErrorCodeRegistry implements ApplicationRunner {
     }
 
     public void init() {
-        String basePackage = "com.example.open.common.utile";
         String path = basePackage.replace('.', '/');
+        locationPattern = "classpath*:" + path + "/**/*.class";
         try {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource[] resources = resolver.getResources("classpath*:" + path + "/**/*.class");
+            Resource[] resources = resolver.getResources(locationPattern);
 
             for (Resource resource : resources) {
                 String resourceUrl = resource.getURL().toString();
@@ -119,6 +121,11 @@ public class ErrorCodeRegistry implements ApplicationRunner {
         if (!duplicateErrors.isEmpty()) {
             System.out.printf("%n%-31s❌❌❌ %-30s 중복 오류코드 발견 목록 %-30s ❌❌❌%n%s",
                     RED, "", "", RESET);
+
+            System.out.printf("%n%s(아래 경로에 해당하는 Enum만 검수 대상입니다. 개발 패턴을 준수해 주세요.)%s",
+                    RESET, RESET);
+            System.out.printf("%n%s"+ locationPattern +" %s%n",
+                    RESET, RESET);
 
             printSeparator();
             System.out.printf("%-25s  %-25s  %-25s  %-25s  %-25s%n",
