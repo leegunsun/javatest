@@ -45,7 +45,6 @@ public class MessageController {
     @MessageMapping("/chat.sendToUser")
     public void sendToUser(@Payload ChatMessage message, Principal principal) {
         String recipient = principal.getName(); // 메시지를 받을 사용자
-//        String recipient = message.getRecipient(); // 메시지를 받을 사용자
         messagingTemplate.convertAndSendToUser(recipient, "/queue/messages", message);
     }
 
