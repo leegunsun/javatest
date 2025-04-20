@@ -52,7 +52,7 @@ public class TodoController {
     }
 
     @Operation(
-            summary = ApiWorkStateLabel.OK + "회원 가입 API2",
+            summary = ApiWorkStateLabel.OK + "",
             description = "2025-04-20 신규 추가된 API입니다."
     )
     @GetMapping("/set4")
