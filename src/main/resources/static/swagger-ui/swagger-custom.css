@@ -8,6 +8,16 @@
   font-style: italic;
 }
 
+.opblock-summary-description span[class^="badge-"] {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 6px;
+  color: white;
+}
+
 .opblock.status-작업중 {
   background-color: #FFF8E1 !important;
   border-left: 8px solid #FFC107 !important;

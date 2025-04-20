@@ -20,8 +20,9 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/swagger-resources/**",
-                                "/webjars/**"
+                                "/swagger-status/**",      // ✅ 여기에 추가
+                                "/swagger-custom.js",      // ✅ 직접 작성한 JS도 필요 시 허용
+                                "/swagger-custom.css"
                         ).permitAll()
                         // 예시로 추가된 API
                         .requestMatchers("/todos").permitAll()
