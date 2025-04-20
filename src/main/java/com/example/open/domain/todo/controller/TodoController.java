@@ -51,6 +51,16 @@ public class TodoController {
         return value != null ? "세션 값: " + value : "세션 없음";
     }
 
+    @Operation(
+            summary = ApiWorkStateLabel.OK + "회원 가입 API2",
+            description = "2025-04-20 신규 추가된 API입니다."
+    )
+    @GetMapping("/set4")
+    public String setSession4(HttpSession session, @RequestParam String value) {
+        session.setAttribute("key", value);
+        return "세션 저장됨: " + value;
+    }
+
     @GetMapping
     public List<Todo> getAllTodos() {
         return todoService.getAllTodos();
