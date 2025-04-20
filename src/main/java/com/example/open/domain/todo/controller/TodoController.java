@@ -1,5 +1,6 @@
 package com.example.open.domain.todo.controller;
 
+import com.example.open.common.utile.ApiWorkStateLabel;
 import com.example.open.domain.todo.service.TodoService;
 import com.example.open.domain.todo.entity.Todo;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,17 +21,17 @@ public class TodoController {
     private final TodoService todoService;
 
     @Operation(
-            summary = "회원 가입 API2",
+            summary = ApiWorkStateLabel.WORKING + "회원 가입 API23",
             description = "2025-04-20 신규 추가된 API입니다.2"
     )
-    @GetMapping("/set")
+    @GetMapping("/set3")
     public String setSession2(HttpSession session, @RequestParam String value) {
         session.setAttribute("key", value);
         return "세션 저장됨: " + value;
     }
 
     @Operation(
-            summary = "회원 가입 API",
+            summary = ApiWorkStateLabel.OK + "회원 가입 API2",
             description = "2025-04-20 신규 추가된 API입니다."
     )
     @GetMapping("/set")
@@ -39,6 +40,10 @@ public class TodoController {
         return "세션 저장됨: " + value;
     }
 
+    @Operation(
+            summary = ApiWorkStateLabel.UPDATE + "회원 가입 API",
+            description = "2025-04-20 신규 추가된 API입니다."
+    )
     @GetMapping("/get")
     public String getSession(HttpSession session) {
         String value = (String) session.getAttribute("key");

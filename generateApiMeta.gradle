@@ -1,6 +1,6 @@
 import groovy.json.JsonOutput
 
-def baseDir = file('src/main/java/com/example/domain')
+def baseDir = file('src/main/java/com/example/open/domain')
 def outputFile = file('src/main/resources/api-meta.json')
 
 task generateApiMeta {
@@ -24,21 +24,45 @@ task generateApiMeta {
 
                 subDir.eachFileRecurse { file ->
                     if (file.name.endsWith('.java')) {
-                        def className = file.path
-                                .replace(project.projectDir.path + "/src/main/java/", "")
+                        def className = file.absolutePath
+                                .replace(project.projectDir.absolutePath + File.separator + "src${File.separator}main${File.separator}java${File.separator}", "")
+                                .replaceAll("[/\\\\]", ".") // 모든 OS 호환
                                 .replace(".java", "")
-                                .replace("/", ".")
 
                         def lines = file.readLines()
+
+                        def isInOperationBlock = false
+                        def operationStartLine = -1
+                        def methodName = null
+
                         lines.eachWithIndex { line, i ->
-                            if (line =~ /public\s+\w+\s+\w+\s*\(/) {
-                                def methodName = (line =~ /public\s+\w+\s+(\w+)\s*\(/)[0][1]
-                                def lineNum = i + 1
-                                def blame = "git blame -L ${lineNum},+1 ${file.absolutePath}".execute().text
+
+                            // 메서드 이름 추출
+                            if (line =~ /public\s+\w+\s+(\w+)\s*\(/) {
+                                methodName = (line =~ /public\s+\w+\s+(\w+)\s*\(/)[0][1]
+                            }
+
+                            // 어노테이션 블록 시작
+                            if (line.trim().startsWith("@Operation")) {
+                                isInOperationBlock = true
+                                operationStartLine = i
+                            }
+
+                            // 어노테이션 블럭 내에서 summary 또는 description 찾기
+                            if (isInOperationBlock && (line.contains("summary") || line.contains("description"))) {
+                                def blame = "git blame -L ${i + 1},+1 ${file.absolutePath}".execute().text
                                 def dateMatch = (blame =~ /(\d{4}-\d{2}-\d{2})/)
                                 def date = dateMatch ? dateMatch[0][1] : 'unknown'
+
                                 def key = "${className}#${methodName}"
-                                metaMap[key] = date
+                                if (!metaMap.containsKey(key)) {
+                                    metaMap[key] = date
+                                }
+                            }
+
+                            // 어노테이션 블럭 끝 추정 (닫는 괄호)
+                            if (isInOperationBlock && line.trim().startsWith(")")) {
+                                isInOperationBlock = false
                             }
                         }
                     }
