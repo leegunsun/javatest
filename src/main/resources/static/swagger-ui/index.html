@@ -1,16 +1,106 @@
-<!-- static/swagger-ui/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Custom Swagger UI</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
-    <link rel="stylesheet" type="text/css" href="swagger-custom.css">
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
+    <link rel="stylesheet" href="swagger-custom.css">
+    <style>
+        /* 전체 배경 색상 */
+        body {
+          background-color: #f5f5f5;
+          margin: 0;
+          font-family: sans-serif;
+        }
+
+        /* 버튼들을 감싸는 컨테이너 */
+        .swagger-tool-container {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 9999;
+          display: flex;
+          gap: 10px;
+        }
+
+        /* 버튼 공통 스타일 */
+        .swagger-tool-btn {
+          padding: 8px 12px;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: bold;
+          cursor: pointer;
+        }
+
+        /* 각 버튼 개별 색상 */
+        #refresh-page-btn {
+          background-color: #6DB33F;
+        }
+
+        #refresh-page-btn:hover {
+          background-color: #388E3C;
+        }
+
+        #reset-localstorage-btn {
+          background-color: #f44336;
+        }
+
+        #reset-localstorage-btn:hover {
+          background-color: #d32f2f;
+        }
+
+        #reset-cookie-btn {
+          background-color: #2196F3;
+        }
+
+        #reset-cookie-btn:hover {
+          background-color: #1976D2;
+        }
+    </style>
 </head>
 <body>
+
+<!-- 🔘 툴 버튼 영역 -->
+<div class="swagger-tool-container">
+    <button id="refresh-page-btn" class="swagger-tool-btn" onclick="refreshPage()">새로고침</button>
+    <button id="reset-localstorage-btn" class="swagger-tool-btn" onclick="clearLocalStorage()">🗑️ LocalStorage 초기화</button>
+    <button id="reset-cookie-btn" class="swagger-tool-btn" onclick="clearCookies()">🍪 쿠키 초기화</button>
+</div>
+
+<!-- Swagger UI 출력 영역 -->
 <div id="swagger-ui"></div>
 
 <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
 <script src="swagger-custom.js"></script>
+<script>
+    function clearLocalStorage() {
+      if (confirm("정말로 LocalStorage를 초기화하시겠습니까?")) {
+        localStorage.clear();
+        alert("LocalStorage가 초기화되었습니다. 페이지를 새로고침합니다.");
+        location.reload();
+      }
+    }
+
+    function clearCookies() {
+      if (confirm("정말로 모든 쿠키를 초기화하시겠습니까?")) {
+        const cookies = document.cookie.split(";");
+
+        for (let cookie of cookies) {
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
+          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        }
+
+        alert("쿠키가 초기화되었습니다. 페이지를 새로고침합니다.");
+        location.reload();
+      }
+    }
+
+    function refreshPage() {
+      location.reload();
+    }
+</script>
+
 </body>
 </html>

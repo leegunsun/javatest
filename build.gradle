@@ -56,12 +56,32 @@ tasks.named('test') {
 
 
 
-apply from: 'generateApiMeta.gradle' // 👈 여기 추가
+def envFile = file(".env")
 
-tasks.named('build') {
-	dependsOn 'generateApiMeta'
+if (envFile.exists()) {
+	envFile.eachLine { line ->
+		if (!line.trim().startsWith("#") && line.contains("=")) {
+			def (key, value) = line.split("=", 2)
+			if (!System.getenv().containsKey(key)) {
+				project.ext.set(key.trim(), value.trim())
+			}
+		}
+	}
 }
 
-tasks.named('processResources') {
-	dependsOn 'generateApiMeta' // ⚠️ 이 줄이 핵심
+def generateApiMetaFlag = project.hasProperty('GENERATE_API_META') && project.GENERATE_API_META == 'true'
+
+if (generateApiMetaFlag) {
+	println "✅ generateApiMeta.gradle 적용됨 (.env 기준)"
+	apply from: 'generateApiMeta.gradle'
+
+	tasks.named('build') {
+		dependsOn 'generateApiMeta'
+	}
+
+	tasks.named('processResources') {
+		dependsOn 'generateApiMeta'
+	}
+} else {
+	println "⛔ generateApiMeta.gradle 미적용 (.env 기준)"
 }

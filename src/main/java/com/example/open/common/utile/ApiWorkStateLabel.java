@@ -66,16 +66,16 @@ public class ApiWorkStateLabel {
 
     // ✅ 화면 출력 등에서 이모티콘과 텍스트를 함께 보여주고 싶을 경우
     public static String getDisplayLabel(String code) {
-        switch (code) {
-            case "WORKING": return WORKING + " " + WORKING_TEXT;
-            case "OK": return OK + " " + OK_TEXT;
-            case "UPDATE": return UPDATE + " " + UPDATE_TEXT;
-            case "NOT_WORKING": return NOT_WORKING + " " + NOT_WORKING_TEXT;
-            case "TEST": return TEST + " " + TEST_TEXT;
-            case "TEST_COMPLETE": return TEST_COMPLETE + " " + TEST_COMPLETE_TEXT;
-            case "TEST_FAIL": return TEST_FAIL + " " + TEST_FAIL_TEXT;
-            case "TEST_SUCCESS": return TEST_SUCCESS + " " + TEST_SUCCESS_TEXT;
-            default: return code;
-        }
+        return switch (code) {
+            case "WORKING" -> WORKING + " " + WORKING_TEXT;
+            case "OK" -> OK + " " + OK_TEXT;
+            case "UPDATE" -> UPDATE + " " + UPDATE_TEXT;
+            case "NOT_WORKING" -> NOT_WORKING + " " + NOT_WORKING_TEXT;
+            case "TEST" -> TEST + " " + TEST_TEXT;
+            case "TEST_COMPLETE" -> TEST_COMPLETE + " " + TEST_COMPLETE_TEXT;
+            case "TEST_FAIL" -> TEST_FAIL + " " + TEST_FAIL_TEXT;
+            case "TEST_SUCCESS" -> TEST_SUCCESS + " " + TEST_SUCCESS_TEXT;
+            default -> code;
+        };
     }
 }

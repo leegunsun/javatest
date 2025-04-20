@@ -1,3 +1,4 @@
+
 let apiStatusMap = {}; // JSON에서 로드될 상태 매핑
 
 window.onload = function () {
@@ -38,14 +39,14 @@ function markApiAsSeen(key, type = "status") {
   localStorage.setItem("seenApis", JSON.stringify(seen));
 }
 
-function isApiSeenRecently(key, thresholdDays = 1) {
+function isApiSeenRecently(key) {
   const seen = getSeenApis()[key];
   if (!seen) return false;
 
   const saved = new Date(seen.timestamp);
   const now = new Date();
   const diffDays = (now - saved) / (1000 * 60 * 60 * 24);
-  return diffDays <= thresholdDays;
+  return true;
 }
 
 // ✅ NEW API 강조
@@ -162,7 +163,7 @@ function highlightApiStatusFromDescription() {
       if (!matchedStatus) return;
 
       const key = `${method.toUpperCase()} ${path}`;
-      if (dismissibleStatuses.includes(matchedEmoji) && isApiSeenRecently(key, 1)) return;
+      if (dismissibleStatuses.includes(matchedEmoji) && isApiSeenRecently(key)) return;
 
       const opblocks = document.querySelectorAll(`.opblock`);
       opblocks.forEach(opblock => {
