@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: open-green
+  profiles:
+    active: dev
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    url: jdbc:mysql://localhost:3306/todo
+    user: root
+    password: root
+  session:
+    store-type: redis
+    redis:
+      namespace: testgunsun
+  redis:
+    cluster:
+      nodes:
+        - localhost:31971
+      max-redirects: 3
+
+server:
+  port: 8082
+  shutdown: graceful
+  servlet:
+    session:
+      timeout: 60
+      cookie:
+        name: JSESSIONID
+
+springdoc:
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    org.springframework.web.socket: DEBUG

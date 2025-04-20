@@ -2,8 +2,10 @@ package com.example.open.domain.todo.controller;
 
 import com.example.open.domain.todo.service.TodoService;
 import com.example.open.domain.todo.entity.Todo;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +19,20 @@ public class TodoController {
 
     private final TodoService todoService;
 
+    @Operation(
+            summary = "회원 가입 API2",
+            description = "2025-04-20 신규 추가된 API입니다.2"
+    )
+    @GetMapping("/set")
+    public String setSession2(HttpSession session, @RequestParam String value) {
+        session.setAttribute("key", value);
+        return "세션 저장됨: " + value;
+    }
 
+    @Operation(
+            summary = "회원 가입 API",
+            description = "2025-04-20 신규 추가된 API입니다."
+    )
     @GetMapping("/set")
     public String setSession(HttpSession session, @RequestParam String value) {
         session.setAttribute("key", value);
@@ -42,8 +57,9 @@ public class TodoController {
     }
 
     @PostMapping
-    public void createTodo(@RequestBody Todo todo) {
-        todoService.createTodo(todo);
+    public ResponseEntity<String> createTodo(@RequestBody Todo todo) {
+//        todoService.createTodo(todo);
+        return ResponseEntity.ok("Todo created successfully");
     }
 
     @PutMapping("/{id}")

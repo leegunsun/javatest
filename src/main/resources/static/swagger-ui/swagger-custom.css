@@ -1,0 +1,14 @@
+/* 기존 내용 제거 가능 */
+.opblock-summary-description:contains("🆕"),
+.opblock-summary-path:contains("🆕") {
+  /* 삭제 또는 더 미미한 스타일 */
+}
+
+/* 여전히 markdown 내 텍스트를 강조하고 싶다면 */
+.markdown p {
+  font-size: 14px;
+}
+.markdown p:has(span:contains("2025")) {
+  color: #ff5722;
+  font-style: italic;
+}

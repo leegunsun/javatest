@@ -16,14 +16,11 @@ public class GlobalExceptionHandler {
     private final ProfileCheckerService profileCheckerService;
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<String>> handleGenericException(Exception ex) {
-        String message = "서버 오류 입니다.";
-
-        if(profileCheckerService.isDebug()) {
-            message = ex.getCause().getMessage();
-        }
-
-        return ResponseEntity.status((HttpStatus.INTERNAL_SERVER_ERROR)).body(ApiResponse.error(message));
+    public ResponseEntity<?> handleGenericException(Exception ex) {
+        String causeMessage = (ex.getCause() != null) ? ex.getCause().getMessage() : ex.getMessage();
+        // 또는 로깅만 하고 메시지는 공통 메시지로 전달
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("예기치 못한 에러가 발생했습니다: " + causeMessage);
     }
 
 }
