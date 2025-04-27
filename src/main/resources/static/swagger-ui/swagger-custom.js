@@ -35,6 +35,8 @@ window.onload = function () {
         dom_id: '#swagger-ui',
         presets: [SwaggerUIBundle.presets.apis],
         layout: "BaseLayout",
+        docExpansion: "none",
+        defaultModelsExpandDepth: 0,    // Models(모델) 창 접기
         onComplete: function () {
           console.log("✅ Swagger UI 로딩 완료");
           setTimeout(() => {
