@@ -35,3 +35,5 @@ springdoc:
 logging:
   level:
     org.springframework.web.socket: DEBUG
+#  curl -i http://localhost:8082/v3/api-docs/swagger-config
+#  curl -i http://localhost:8082/v3/api-docs/swagger-config

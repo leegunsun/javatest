@@ -150,6 +150,101 @@ function highlightNewControllersFromMeta() {
       tagNameSpan.parentElement.appendChild(badge);
       console.log(`🎉 NEW 컨트롤러 뱃지 추가 완료: ${tagName}`);
     }
+
+//    section.style.boxShadow = '0 0 15px rgba(111, 66, 193, 0.5)';
+  });
+}
+
+
+// ✅ 상태별 강조
+function highlightApiStatusFromDescription() {
+  console.log("🧹 highlightApiStatusFromDescription - 기존 상태 강조 초기화");
+
+  document.querySelectorAll(".opblock").forEach(opblock => {
+    opblock.className = opblock.className.split(' ').filter(c => !c.startsWith('status-')).join(' ');
+
+    const descWrapper = opblock.querySelector('.opblock-summary-description');
+    if (descWrapper) {
+      descWrapper.querySelectorAll("span[class^='badge-']").forEach(badge => badge.remove());
+    }
+  });
+
+  const spec = window.ui.specSelectors.specJson().toJS();
+  const paths = spec.paths;
+
+  const emojiToTextMap = Object.entries(apiStatusMap).reduce((map, [emoji, text]) => {
+    map[emoji] = text;
+    return map;
+  }, {});
+
+  const dismissibleStatuses = ["✅", "⬆️"];
+
+  Object.entries(paths).forEach(([path, methods]) => {
+    Object.entries(methods).forEach(([method, operation]) => {
+      const text = `${operation.summary || ""} ${operation.description || ""}`;
+      const matchedEmoji = Object.keys(emojiToTextMap).find(emoji => text.includes(emoji));
+      const matchedStatus = matchedEmoji ? emojiToTextMap[matchedEmoji] : undefined;
+
+      if (!matchedStatus) return;
+
+      const key = `${method.toUpperCase()} ${path}`;
+      if (dismissibleStatuses.includes(matchedEmoji) && isApiSeenRecently(key)) return;
+
+     const opblocks = document.querySelectorAll(".opblock");
+     opblocks.forEach(opblock => {
+       const elSummary = opblock.querySelector(".opblock-summary");
+       const elPath = elSummary?.querySelector(".opblock-summary-path");
+       const elMethod = elSummary?.querySelector(".opblock-summary-method");
+
+       const matchesPath = elPath?.textContent === path;
+       const matchesMethod = elMethod?.textContent?.toLowerCase() === method;
+
+       if (matchesPath && matchesMethod) {
+         // ✅ 원하는 대로 classList로 추가
+         opblock.classList.add(`status-${matchedStatus}`);
+         console.log(`✅ [STATUS] 클래스 적용 완료: status-${matchedStatus}`);
+
+         const descWrapper = elSummary.querySelector(".opblock-summary-description");
+         if (!descWrapper) {
+           console.warn(`❌ [STATUS] descWrapper 없음: ${key}`);
+           return;
+         }
+
+         const alreadyBadge = descWrapper.querySelector(`.badge-${matchedStatus}`);
+         if (alreadyBadge) {
+           console.warn(`⚠️ [STATUS] 이미 badge 존재함: ${key}`);
+           return;
+         }
+
+         const badge = document.createElement("span");
+         badge.textContent = matchedStatus;
+         badge.className = `badge-${matchedStatus}`;
+         badge.dataset.status = matchedStatus;
+         badge.style.marginRight = "8px";
+
+         // ✅ badge를 클릭했을 때 (한 번만)
+         badge.addEventListener("click", () => {
+           markApiAsSeen(key, "status");
+
+           badge.remove();
+
+           const status = badge.dataset.status;
+           // ✅ classList로 삭제
+           opblock.classList.remove(`status-${status}`);
+
+           // ✅ 스타일까지 초기화
+           opblock.style.backgroundColor = '';
+           opblock.style.borderLeft = '';
+           opblock.style.boxShadow = '';
+
+           console.log(`✅ [STATUS] badge 삭제 및 스타일 초기화 완료: ${key}`);
+         }, { once: true }); // 클릭 이벤트는 한 번만 실행
+
+         descWrapper.appendChild(badge);
+         console.log(`✅ [STATUS] badge 추가 완료: ${key}`);
+       }
+     });
+    });
   });
 }
 
@@ -197,27 +292,49 @@ function highlightNewApisFromSpec() {
           const elPath = elSummary?.querySelector(".opblock-summary-path");
           const elMethod = elSummary?.querySelector(".opblock-summary-method");
 
-          if (elPath?.textContent === path && elMethod?.textContent?.toLowerCase() === method) {
+          const matchesPath = elPath?.textContent === path;
+          const matchesMethod = elMethod?.textContent?.toLowerCase() === method;
+
+          if (matchesPath && matchesMethod) {
+            opblock.style.backgroundColor = '#f3e8fd';
+            opblock.style.borderLeft = '8px solid #6F42C1';
+            opblock.style.boxShadow = '0 0 15px rgba(111, 66, 193, 0.5)';
+
             const descWrapper = elSummary.querySelector(".opblock-summary-description");
-            if (descWrapper && !descWrapper.querySelector(".new-api-badge")) {
+            const alreadyBadge = descWrapper?.querySelector(".new-api-badge");
+
+            if (descWrapper && !alreadyBadge) {
               const badge = document.createElement("span");
               badge.textContent = "NEW";
               badge.className = "new-api-badge";
-              badge.style.cssText = "background:#6F42C1;color:white;padding:2px 8px;margin-left:8px;border-radius:8px;font-size:12px;font-weight:bold;display:inline-block;";
-              descWrapper.appendChild(badge);
 
-              elSummary.addEventListener("click", () => {
-                markApiAsSeen(key, "new");
-                opblock.style.backgroundColor = '';
-                opblock.style.borderLeft = '';
-                opblock.style.boxShadow = '';
-                const badge = descWrapper.querySelector(".new-api-badge");
-                if (badge) badge.remove();
-              }, { once: true }); // ✅ 클릭 이벤트는 한 번만
+              badge.style.backgroundColor = "#6F42C1";
+              badge.style.color = "#fff";
+              badge.style.padding = "2px 8px";
+              badge.style.marginLeft = "8px";
+              badge.style.borderRadius = "8px";
+              badge.style.fontSize = "12px";
+              badge.style.fontWeight = "bold";
+              badge.style.display = "inline-block";
+
+              descWrapper.appendChild(badge);
+              console.log(`🎉 NEW 뱃지 추가 완료: ${key}`);
             }
+
+            elSummary?.addEventListener("click", () => {
+              // ✅ 클릭하면 스타일 원복 + 뱃지 삭제
+              markApiAsSeen(key, "new");
+              opblock.style.backgroundColor = '';
+              opblock.style.borderLeft = '';
+              opblock.style.boxShadow = '';
+
+              const badge = opblock.querySelector(".new-api-badge");
+              if (badge) badge.remove();
+            }, { once: true }); // ✅ 클릭 이벤트는 한 번만
           }
         });
       }
+
     });
   });
 }
@@ -293,69 +410,6 @@ function observeApiExpandCollapse() {
   });
 
   observer.observe(document.getElementById('swagger-ui'), { childList: true, subtree: true });
-}
-
-// ✅ 상태별 강조
-function highlightApiStatusFromDescription() {
-  console.log("🧹 highlightApiStatusFromDescription - 기존 상태 강조 초기화");
-
-  document.querySelectorAll(".opblock").forEach(opblock => {
-    opblock.className = opblock.className.split(' ').filter(c => !c.startsWith('status-')).join(' ');
-
-    const descWrapper = opblock.querySelector('.opblock-summary-description');
-    if (descWrapper) {
-      descWrapper.querySelectorAll("span[class^='badge-']").forEach(badge => badge.remove());
-    }
-  });
-
-  const spec = window.ui.specSelectors.specJson().toJS();
-  const paths = spec.paths;
-
-  const emojiToTextMap = Object.entries(apiStatusMap).reduce((map, [emoji, text]) => {
-    map[emoji] = text;
-    return map;
-  }, {});
-
-  const dismissibleStatuses = ["✅", "⬆️"];
-
-  Object.entries(paths).forEach(([path, methods]) => {
-    Object.entries(methods).forEach(([method, operation]) => {
-      const text = `${operation.summary || ""} ${operation.description || ""}`;
-      const matchedEmoji = Object.keys(emojiToTextMap).find(emoji => text.includes(emoji));
-      const matchedStatus = matchedEmoji ? emojiToTextMap[matchedEmoji] : undefined;
-
-      if (!matchedStatus) return;
-
-      const key = `${method.toUpperCase()} ${path}`;
-      if (dismissibleStatuses.includes(matchedEmoji) && isApiSeenRecently(key)) return;
-
-      const opblocks = document.querySelectorAll(".opblock");
-      opblocks.forEach(opblock => {
-        const elSummary = opblock.querySelector(".opblock-summary");
-        const elPath = elSummary?.querySelector(".opblock-summary-path");
-        const elMethod = elSummary?.querySelector(".opblock-summary-method");
-
-        if (elPath?.textContent === path && elMethod?.textContent?.toLowerCase() === method) {
-          const descWrapper = elSummary.querySelector(".opblock-summary-description");
-          if (descWrapper && !descWrapper.querySelector(`.badge-${matchedStatus}`)) {
-            const badge = document.createElement("span");
-            badge.textContent = matchedStatus;
-            badge.className = `badge-${matchedStatus}`;
-            badge.dataset.status = matchedStatus;
-            badge.style.marginRight = "8px";
-            descWrapper.appendChild(badge);
-
-            elSummary.addEventListener("click", () => {
-              markApiAsSeen(key, "status");
-              const badge = descWrapper.querySelector(`.badge-${matchedStatus}`);
-              if (badge) badge.remove();
-              opblock.className = opblock.className.split(' ').filter(c => !c.startsWith('status-')).join(' ');
-            }, { once: true }); // ✅ 클릭 이벤트는 한 번만
-          }
-        }
-      });
-    });
-  });
 }
 
 

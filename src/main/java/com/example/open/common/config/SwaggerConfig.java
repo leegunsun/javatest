@@ -25,4 +25,32 @@ public class SwaggerConfig {
                         new Server().url("http://localhost:8082").description("Local Swagger Server")
                 ));
     }
+
+    @Bean
+    public GroupedOpenApi allApi() {
+        return GroupedOpenApi.builder()
+                .group("1")
+                .displayName("전체 API")
+                .pathsToMatch("/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi memberApi() {
+        return GroupedOpenApi.builder()
+                .group("2")
+                .displayName("회원 API")
+                .packagesToScan("com.example.project.member.controller")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi productApi() {
+        return GroupedOpenApi.builder()
+                .group("3")
+                .displayName("상품 API")
+                .packagesToScan("com.example.project.product.controller")
+                .build();
+    }
+
 }
