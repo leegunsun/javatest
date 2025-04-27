@@ -1,5 +1,5 @@
-
 /* 여전히 markdown 내 텍스트를 강조하고 싶다면 */
+
 .markdown p {
   font-size: 14px;
 }
@@ -47,9 +47,9 @@
 }
 
 .opblock.status-업데이트 {
-  background-color: #E8F0FE !important; /* 연한 파랑 */
-  border-left: 8px solid #0D6EFD !important; /* 진한 파랑 */
-}
+  background-color: #E8F0FE !important;
+  border-left: 8px solid #0D6EFD !important;
+  }
 .opblock-summary-description .badge-업데이트 {
   background-color: #0D6EFD;
   color: white;

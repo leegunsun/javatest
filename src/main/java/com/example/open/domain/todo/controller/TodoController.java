@@ -22,7 +22,7 @@ public class TodoController {
 
     @Operation(
             summary = ApiWorkStateLabel.WORKING + "회원 가입 API23",
-            description = "2025-04-20 신규 추가된 API입니다.2"
+            description = "2025-04-20 신규 추가된 API입니다.23"
     )
     @GetMapping("/set3")
     public String setSession2(HttpSession session, @RequestParam String value) {
@@ -32,7 +32,7 @@ public class TodoController {
 
     @Operation(
             summary = ApiWorkStateLabel.OK + "회원 가입 API2",
-            description = "2025-04-20 신규 추가된 API입니다."
+            description = "2025-04-20 신규 추가된 API입니다.5"
     )
     @GetMapping("/set")
     public String setSession(HttpSession session, @RequestParam String value) {
@@ -42,7 +42,7 @@ public class TodoController {
 
     @Operation(
             summary = ApiWorkStateLabel.UPDATE + "회원 가입 API",
-            description = "2025-04-20 신규 추가된 API입니다."
+            description = "2025-04-20 신규 추가된 API입니다.7"
     )
     @GetMapping("/get")
     public String getSession(HttpSession session) {
@@ -53,7 +53,7 @@ public class TodoController {
 
     @Operation(
             summary = ApiWorkStateLabel.OK + "",
-            description = "2025-04-20 신규 추가된 API입니다."
+            description = "2025-04-20 신규 추가된 API입니다.8"
     )
     @GetMapping("/set4")
     public String setSession4(HttpSession session, @RequestParam String value) {

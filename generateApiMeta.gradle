@@ -1,7 +1,8 @@
 import groovy.json.JsonOutput
 
 def baseDir = file('src/main/java/com/example/open/domain')
-def outputFile = file('src/main/resources/api-meta.json')
+def outputFile = file('src/main/resources/static/swagger-status/api-meta.json')
+
 
 task generateApiMeta {
     group = 'build setup'
@@ -31,40 +32,46 @@ task generateApiMeta {
 
                         def lines = file.readLines()
 
-                        def isInOperationBlock = false
-                        def operationStartLine = -1
-                        def methodName = null
+                        def pendingOperation = false
+                        def operationSummaryLine = -1
+                        def storedMethodName = null
+
+                        def startLine = -1
 
                         lines.eachWithIndex { line, i ->
-
-                            // 메서드 이름 추출
-                            if (line =~ /public\s+\w+\s+(\w+)\s*\(/) {
-                                methodName = (line =~ /public\s+\w+\s+(\w+)\s*\(/)[0][1]
+                            if (line.contains("@Operation")) {
+                                pendingOperation = true
+                                startLine = i  // @Operation 시작 줄 저장
                             }
 
-                            // 어노테이션 블록 시작
-                            if (line.trim().startsWith("@Operation")) {
-                                isInOperationBlock = true
-                                operationStartLine = i
+                            if (pendingOperation && (line.contains("summary") || line.contains("description"))) {
+                                operationSummaryLine = i  // summary 줄 저장
                             }
 
-                            // 어노테이션 블럭 내에서 summary 또는 description 찾기
-                            if (isInOperationBlock && (line.contains("summary") || line.contains("description"))) {
-                                def blame = "git blame -L ${i + 1},+1 ${file.absolutePath}".execute().text
+                            def methodMatcher = line =~ /public\s+[\w<>\[\],\s]+?\s+(\w+)\s*\(/
+                            if (pendingOperation && methodMatcher && startLine >= 0) {
+                                storedMethodName = methodMatcher[0][1]
+
+                                def endLine = i + 1  // 0-based 인덱스 i에 +1을 해서 실제 파일의 행 번호
+                                def blame = "git blame -L ${startLine+1},${endLine} ${file.absolutePath}".execute().text
+//                                println "DEBUG-NEW: file=${file.name}, start=${startLine+1}, end=${endLine}"
                                 def dateMatch = (blame =~ /(\d{4}-\d{2}-\d{2})/)
-                                def date = dateMatch ? dateMatch[0][1] : 'unknown'
+                                def allDates = dateMatch.collect { it[1] }
+                                def date = allDates ? allDates.sort().last() : 'unknown'
 
-                                def key = "${className}#${methodName}"
+                                def key = "${className}#${storedMethodName}"
                                 if (!metaMap.containsKey(key)) {
                                     metaMap[key] = date
                                 }
-                            }
 
-                            // 어노테이션 블럭 끝 추정 (닫는 괄호)
-                            if (isInOperationBlock && line.trim().startsWith(")")) {
-                                isInOperationBlock = false
+                                // 초기화
+                                pendingOperation = false
+                                operationSummaryLine = -1
+                                startLine = -1
+                                storedMethodName = null
                             }
                         }
+
                     }
                 }
             }
