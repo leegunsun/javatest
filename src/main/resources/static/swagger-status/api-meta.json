@@ -1,6 +1,22 @@
 {
-    "com.example.open.domain.todo.controller.TodoController#setSession2": "2025-04-20",
-    "com.example.open.domain.todo.controller.TodoController#setSession": "2025-04-20",
-    "com.example.open.domain.todo.controller.TodoController#getSession": "2025-04-20",
-    "com.example.open.domain.todo.controller.TodoController#setSession4": "2025-04-20"
+    "com.example.open.domain.todo.controller.TodoController": {
+        "tag": {
+            "name": "todos",
+            "description": "\ud560 \uc77c \uad00\ub9ac API"
+        },
+        "methods": {
+            "setSession2": {
+                "date": "2025-04-27"
+            },
+            "setSession": {
+                "date": "2025-04-27"
+            },
+            "getSession": {
+                "date": "2025-04-27"
+            },
+            "setSession4": {
+                "date": "2025-04-27"
+            }
+        }
+    }
 }

@@ -4,6 +4,7 @@ import com.example.open.common.utile.ApiWorkStateLabel;
 import com.example.open.domain.todo.service.TodoService;
 import com.example.open.domain.todo.entity.Todo;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,8 +15,12 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/todos")
+@RequestMapping("/todo")
 @RequiredArgsConstructor
+@Tag(
+        name = "todos",
+        description = "할 일 관리 API"
+)
 public class TodoController {
 
     private final TodoService todoService;

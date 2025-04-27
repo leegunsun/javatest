@@ -1,8 +1,7 @@
-let apiStatusMap = {};        // 상태 뱃지용
-let apiCreatedDateMap = {};   // NEW 강조용
+let apiStatusMap = {};
+let apiCreatedDateMap = {};
 
 window.onload = function () {
-  // 1단계: api-status.json 로드
   fetch("/swagger-status/api-status.json")
     .then(res => res.json())
     .then(statusMap => {
@@ -13,7 +12,6 @@ window.onload = function () {
         console.log("✅ api-status.json 로드 완료:", apiStatusMap);
       }
 
-      // 2단계: api-meta.json 로드 (성공하든 실패하든 다음 진행)
       return fetch("/swagger-status/api-meta.json")
         .then(res => res.json())
         .then(createdMap => {
@@ -25,14 +23,13 @@ window.onload = function () {
           }
         })
         .catch(err => {
-          console.error("❌ api-meta.json 요청 자체 실패:", err);
+          console.error("❌ api-meta.json 요청 실패:", err);
         });
     })
     .catch(err => {
-      console.error("❌ api-status.json 요청 자체 실패:", err);
+      console.error("❌ api-status.json 요청 실패:", err);
     })
     .finally(() => {
-      // 성공하든 실패하든 Swagger UI 초기화는 반드시 진행
       const ui = SwaggerUIBundle({
         url: "/v3/api-docs",
         dom_id: '#swagger-ui',
@@ -41,73 +38,321 @@ window.onload = function () {
         onComplete: function () {
           console.log("✅ Swagger UI 로딩 완료");
           setTimeout(() => {
-            highlightApiStatusFromDescription();  // 상태 강조
-            highlightNewApisFromSpec();          // NEW 강조
-            highlightNewModelsFromSpec();        // NEW 모델 강조
+            observeModelsAndHighlight();
+            observeApiExpandCollapse();
+            highlightNewControllersFromMeta();
           }, 1000);
         }
       });
-
       window.ui = ui;
     });
 };
 
-
-// ✅ NEW Model 강조
-function highlightNewModelsFromSpec() {
-  const spec = window.ui.specSelectors.specJson().toJS();
-  const schemas = spec.components?.schemas;
-  if (!schemas) return;
+// ✅ NEW Controller 강조
+function highlightNewControllersFromMeta() {
+  console.log("🛠️ highlightNewControllersFromMeta() 호출됨");
 
   const now = new Date();
   const DAYS_THRESHOLD = 5;
+  const seenApis = getSeenApis();
 
-  Object.entries(schemas).forEach(([schemaName, schemaContent]) => {
-    // 🔍 class#method 기반이 아니라, 모델 이름 기반으로 매칭
-    const candidates = Object.entries(apiCreatedDateMap)
-      .filter(([fullKey]) => fullKey.endsWith(`#${schemaName}`));
+  const spec = window.ui.specSelectors.specJson().toJS();
+  const paths = spec.paths;
 
-    let classSchemaKey = null;
-    let createdDate = null;
+  const controllerTagMap = {};
 
-    if (candidates.length === 1) {
-      [classSchemaKey, createdDate] = candidates[0];
-    } else if (candidates.length > 1) {
-      [classSchemaKey, createdDate] = candidates.find(([k]) => k.includes(schemaName)) || [];
+  // ✅ operationId → method, path 매핑
+  Object.entries(apiCreatedDateMap).forEach(([controllerFullName, controllerData]) => {
+    const tagName = controllerData.tag?.name;
+    if (!tagName || !controllerData.methods) return;
+
+    const dates = Object.values(controllerData.methods).map(method => method.date);
+
+    const operationIdMap = [];
+
+    Object.keys(controllerData.methods).forEach(operationId => {
+      outer: for (const [path, methods] of Object.entries(paths)) {
+        for (const [method, operation] of Object.entries(methods)) {
+          if (operation.operationId === operationId) {
+            operationIdMap.push({
+              operationId,
+              method: method.toUpperCase(),
+              path
+            });
+            break outer;
+          }
+        }
+      }
+    });
+
+    controllerTagMap[tagName.toLowerCase()] = { dates, operationIdMap };
+  });
+
+  // ✅ NEW 컨트롤러 뱃지 붙이거나 제거
+  const tagElements = document.querySelectorAll('.opblock-tag-section');
+  tagElements.forEach(section => {
+    const tagHeader = section.querySelector('.opblock-tag');
+    const tagNameSpan = tagHeader?.querySelector('span');
+    const tagName = tagNameSpan?.textContent.trim();
+
+    if (!tagName) return;
+
+    const data = controllerTagMap[tagName.toLowerCase()];
+    if (!data) {
+      console.log(`❓ ${tagName}에 대한 데이터 없음`);
+      return;
     }
 
-    if (!createdDate) return;
+    const { dates, operationIdMap } = data;
 
-    const modelDate = new Date(createdDate);
-    const diffDays = Math.floor((now - modelDate) / (1000 * 60 * 60 * 24));
-    const isRecent = diffDays >= 0 && diffDays <= DAYS_THRESHOLD;
+    // 🔥 최근 5일 이내 API 존재하는가?
+    const hasRecent = dates.some(dateStr => {
+      const createdDate = new Date(dateStr);
+      const diffDays = (now - createdDate) / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays <= DAYS_THRESHOLD;
+    });
+
+    if (!hasRecent) {
+      const existingBadge = tagHeader.querySelector(".new-controller-badge");
+      if (existingBadge) {
+        existingBadge.remove();
+        console.log(`🧹 [컨트롤러 제거 - 최근 없음] ${tagName}`);
+      }
+      return;
+    }
+
+    // 🔥 모든 하위 API가 seen 되었는가?
+    const allApisSeen = operationIdMap.every(({ method, path }) => {
+      const key = `${method} ${path}`;
+      const seen = seenApis[key];
+      console.log(`[검사] ${key}: ${seen ? '✅ 확인됨' : '❌ 미확인'}`);
+      return seen;
+    });
+
+    if (allApisSeen) {
+      const existingBadge = tagHeader.querySelector(".new-controller-badge");
+      if (existingBadge) {
+        existingBadge.remove();
+        console.log(`🧹 [컨트롤러 제거 - 모두 확인] ${tagName}`);
+      }
+      return;
+    }
+
+    // 🔥 NEW 뱃지가 없으면 추가
+    const existingBadge = tagHeader.querySelector(".new-controller-badge");
+    if (!existingBadge) {
+      const badge = document.createElement("span");
+      badge.textContent = "NEW";
+      badge.className = "new-controller-badge";
+      badge.style.cssText = "background:#6F42C1;color:white;padding:2px 8px;margin-left:8px;border-radius:8px;font-size:12px;font-weight:bold;display:inline-block;";
+      tagNameSpan.parentElement.appendChild(badge);
+      console.log(`🎉 NEW 컨트롤러 뱃지 추가 완료: ${tagName}`);
+    }
+  });
+}
+
+
+// ✅ NEW API 강조
+function highlightNewApisFromSpec() {
+  console.log("🧹 highlightNewApisFromSpec - 기존 NEW 강조 초기화");
+
+  document.querySelectorAll(".opblock").forEach(opblock => {
+    opblock.style.backgroundColor = '';
+    opblock.style.borderLeft = '';
+    opblock.style.boxShadow = '';
+
+    const badge = opblock.querySelector(".new-api-badge");
+    if (badge) badge.remove();
+  });
+
+  const spec = window.ui.specSelectors.specJson().toJS();
+  const paths = spec.paths;
+  const now = new Date();
+  const DAYS_THRESHOLD = 5;
+
+  Object.entries(paths).forEach(([path, methods]) => {
+    Object.entries(methods).forEach(([method, operation]) => {
+      const operationId = operation.operationId;
+      if (!operationId) return;
+
+      let createdDate = null;
+      Object.entries(apiCreatedDateMap).forEach(([controllerFullName, controllerData]) => {
+        if (controllerData.methods && controllerData.methods[operationId]) {
+          createdDate = controllerData.methods[operationId].date;
+        }
+      });
+
+      if (!createdDate) return;
+
+      const diffDays = Math.floor((now - new Date(createdDate)) / (1000 * 60 * 60 * 24));
+      const isRecent = diffDays >= 0 && diffDays <= DAYS_THRESHOLD;
+
+      const key = `${method.toUpperCase()} ${path}`;
+      if (isRecent && !isApiSeenRecently(key)) {
+        const opblocks = document.querySelectorAll(".opblock");
+        opblocks.forEach(opblock => {
+          const elSummary = opblock.querySelector(".opblock-summary");
+          const elPath = elSummary?.querySelector(".opblock-summary-path");
+          const elMethod = elSummary?.querySelector(".opblock-summary-method");
+
+          if (elPath?.textContent === path && elMethod?.textContent?.toLowerCase() === method) {
+            const descWrapper = elSummary.querySelector(".opblock-summary-description");
+            if (descWrapper && !descWrapper.querySelector(".new-api-badge")) {
+              const badge = document.createElement("span");
+              badge.textContent = "NEW";
+              badge.className = "new-api-badge";
+              badge.style.cssText = "background:#6F42C1;color:white;padding:2px 8px;margin-left:8px;border-radius:8px;font-size:12px;font-weight:bold;display:inline-block;";
+              descWrapper.appendChild(badge);
+
+              elSummary.addEventListener("click", () => {
+                markApiAsSeen(key, "new");
+                opblock.style.backgroundColor = '';
+                opblock.style.borderLeft = '';
+                opblock.style.boxShadow = '';
+                const badge = descWrapper.querySelector(".new-api-badge");
+                if (badge) badge.remove();
+              }, { once: true }); // ✅ 클릭 이벤트는 한 번만
+            }
+          }
+        });
+      }
+    });
+  });
+}
+
+
+// ✅ NEW Model 강조
+function observeModelsAndHighlight() {
+  const observer = new MutationObserver(() => {
+    const modelNodes = document.querySelectorAll(".model-container");
+    if (modelNodes.length > 0) {
+      console.log("✅ 모델 등장 감지 완료");
+      highlightNewModelsFromSpec();
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function highlightNewModelsFromSpec() {
+  const spec = window.ui.specSelectors.specJson().toJS();
+  const schemas = spec.components?.schemas;
+  const now = new Date();
+  const DAYS_THRESHOLD = 5;
+
+  Object.entries(schemas).forEach(([schemaName]) => {
+    let dates = [];
+
+    Object.entries(apiCreatedDateMap).forEach(([controllerFullName, controllerData]) => {
+      if (controllerData.methods && controllerData.methods[schemaName]) {
+        dates.push(controllerData.methods[schemaName].date);
+      }
+    });
+
+    if (dates.length === 0) return;
+
+    const isRecent = dates.some(dateStr => {
+      const modelDate = new Date(dateStr);
+      const diffDays = (now - modelDate) / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays <= DAYS_THRESHOLD;
+    });
 
     if (isRecent) {
       const modelNodes = document.querySelectorAll(".model-container");
-
       modelNodes.forEach(node => {
         const label = node.querySelector(".model-title");
-        if (label && label.textContent.trim() === schemaName) {
-          const existingBadge = label.querySelector(".new-model-badge");
-          if (!existingBadge) {
-            const badge = document.createElement("span");
-            badge.textContent = "NEW";
-            badge.className = "new-model-badge";
-            badge.style.backgroundColor = "#6F42C1";
-            badge.style.color = "#fff";
-            badge.style.padding = "2px 8px";
-            badge.style.marginLeft = "8px";
-            badge.style.borderRadius = "8px";
-            badge.style.fontSize = "12px";
-            badge.style.fontWeight = "bold";
-            badge.style.display = "inline-block";
-
-            label.appendChild(badge);
-            console.log(`🎉 NEW 모델 뱃지 추가 완료: ${schemaName}`);
-          }
+        if (label?.textContent.trim() === schemaName) {
+          const badge = document.createElement("span");
+          badge.textContent = "NEW";
+          badge.className = "new-model-badge";
+          badge.style.cssText = "background:#6F42C1;color:white;padding:2px 8px;margin-left:8px;border-radius:8px;font-size:12px;font-weight:bold;display:inline-block;";
+          label.appendChild(badge);
+          console.log(`🎉 NEW 모델 뱃지 추가 완료: ${schemaName}`);
         }
       });
     }
+  });
+}
+
+// ✅ 이하 observeApiExpandCollapse, highlightApiStatusFromDescription, seenApis 관리는 동일하게 유지
+function observeApiExpandCollapse() {
+  const observer = new MutationObserver(() => {
+    console.log("🔄 API 블록 변화 감지됨");
+
+    observer.disconnect(); // ✅ 변화 감지 멈춤
+
+    try {
+      highlightApiStatusFromDescription();
+      highlightNewApisFromSpec();
+      highlightNewControllersFromMeta(); // ✅ 추가
+    } finally {
+      observer.observe(document.getElementById('swagger-ui'), { childList: true, subtree: true }); // ✅ 다시 감시 시작
+    }
+  });
+
+  observer.observe(document.getElementById('swagger-ui'), { childList: true, subtree: true });
+}
+
+// ✅ 상태별 강조
+function highlightApiStatusFromDescription() {
+  console.log("🧹 highlightApiStatusFromDescription - 기존 상태 강조 초기화");
+
+  document.querySelectorAll(".opblock").forEach(opblock => {
+    opblock.className = opblock.className.split(' ').filter(c => !c.startsWith('status-')).join(' ');
+
+    const descWrapper = opblock.querySelector('.opblock-summary-description');
+    if (descWrapper) {
+      descWrapper.querySelectorAll("span[class^='badge-']").forEach(badge => badge.remove());
+    }
+  });
+
+  const spec = window.ui.specSelectors.specJson().toJS();
+  const paths = spec.paths;
+
+  const emojiToTextMap = Object.entries(apiStatusMap).reduce((map, [emoji, text]) => {
+    map[emoji] = text;
+    return map;
+  }, {});
+
+  const dismissibleStatuses = ["✅", "⬆️"];
+
+  Object.entries(paths).forEach(([path, methods]) => {
+    Object.entries(methods).forEach(([method, operation]) => {
+      const text = `${operation.summary || ""} ${operation.description || ""}`;
+      const matchedEmoji = Object.keys(emojiToTextMap).find(emoji => text.includes(emoji));
+      const matchedStatus = matchedEmoji ? emojiToTextMap[matchedEmoji] : undefined;
+
+      if (!matchedStatus) return;
+
+      const key = `${method.toUpperCase()} ${path}`;
+      if (dismissibleStatuses.includes(matchedEmoji) && isApiSeenRecently(key)) return;
+
+      const opblocks = document.querySelectorAll(".opblock");
+      opblocks.forEach(opblock => {
+        const elSummary = opblock.querySelector(".opblock-summary");
+        const elPath = elSummary?.querySelector(".opblock-summary-path");
+        const elMethod = elSummary?.querySelector(".opblock-summary-method");
+
+        if (elPath?.textContent === path && elMethod?.textContent?.toLowerCase() === method) {
+          const descWrapper = elSummary.querySelector(".opblock-summary-description");
+          if (descWrapper && !descWrapper.querySelector(`.badge-${matchedStatus}`)) {
+            const badge = document.createElement("span");
+            badge.textContent = matchedStatus;
+            badge.className = `badge-${matchedStatus}`;
+            badge.dataset.status = matchedStatus;
+            badge.style.marginRight = "8px";
+            descWrapper.appendChild(badge);
+
+            elSummary.addEventListener("click", () => {
+              markApiAsSeen(key, "status");
+              const badge = descWrapper.querySelector(`.badge-${matchedStatus}`);
+              if (badge) badge.remove();
+              opblock.className = opblock.className.split(' ').filter(c => !c.startsWith('status-')).join(' ');
+            }, { once: true }); // ✅ 클릭 이벤트는 한 번만
+          }
+        }
+      });
+    });
   });
 }
 
@@ -127,194 +372,15 @@ function markApiAsSeen(key, type = "status") {
 function isApiSeenRecently(key, thresholdDays = 5) {
   const seenApis = getSeenApis();
   const seen = seenApis[key];
-  if (!seen) return false; // 아예 본 적이 없는 경우 → 아직 강조 대상
+  if (!seen) return false;
 
   const saved = new Date(seen.timestamp);
   const now = new Date();
   const diffDays = (now - saved) / (1000 * 60 * 60 * 24);
 
-  // 5일 이상 경과했다면 확인된 것으로 간주하고 localStorage에 기록
   if (diffDays >= thresholdDays) {
-    console.log(`🕔 [AUTO CONFIRM] ${key} → ${diffDays.toFixed(1)}일 경과 → 자동 확인`);
-    markApiAsSeen(key, seen.type); // 기존 type 유지하여 자동 등록
-    return true; // 확인된 것으로 간주
+    markApiAsSeen(key, seen.type);
+    return true;
   }
-
-  return true; // 5일 이내 → 이미 확인된 상태
-}
-
-// ✅ NEW API 강조
-function highlightNewApisFromSpec() {
-  const spec = window.ui.specSelectors.specJson().toJS();
-  const paths = spec.paths;
-  const now = new Date();
-  const DAYS_THRESHOLD = 5;
-
-  Object.entries(paths).forEach(([path, methods]) => {
-    Object.entries(methods).forEach(([method, operation]) => {
-      const operationId = operation.operationId;
-      const tags = operation.tags || [];
-      const tag = tags[0];
-      const key = `${method.toUpperCase()} ${path}`;
-
-      // 🔍 class#method 포맷 기반 탐색
-      const candidates = Object.entries(apiCreatedDateMap)
-        .filter(([fullKey]) => fullKey.endsWith(`#${operationId}`));
-
-      let classMethodKey = null;
-      let createdDate = null;
-
-      if (candidates.length === 1) {
-        [classMethodKey, createdDate] = candidates[0];
-      } else if (candidates.length > 1) {
-        [classMethodKey, createdDate] = candidates.find(([k]) => k.includes(tag)) || [];
-      }
-
-      if (!createdDate) return;
-
-      const apiDate = new Date(createdDate);
-      const diffDays = Math.floor((now - apiDate) / (1000 * 60 * 60 * 24));
-      const isRecent = diffDays >= 0 && diffDays <= DAYS_THRESHOLD;
-
-//console.log("🔥 검사 대상:", {
-//  path,
-//  method,
-//  operationId,
-//  tags,
-//  key,
-//  classMethodKey,
-//  createdDate,
-//  apiDate: createdDate ? new Date(createdDate).toISOString() : null,
-//  diffDays,
-//  isRecent,
-//  seenRecently: isApiSeenRecently(key)
-//});
-
-      if (isRecent && !isApiSeenRecently(key)) {
-        const opblocks = document.querySelectorAll(`.opblock`);
-        opblocks.forEach(opblock => {
-          const elSummary = opblock.querySelector('.opblock-summary');
-          const elPath = elSummary?.querySelector('.opblock-summary-path');
-          const elMethod = elSummary?.querySelector('.opblock-summary-method');
-
-          const matchesPath = elPath?.textContent === path;
-          const matchesMethod = elMethod?.textContent?.toLowerCase() === method;
-
-          if (matchesPath && matchesMethod) {
-            opblock.style.backgroundColor = '#f3e8fd';
-            opblock.style.borderLeft = '8px solid #6F42C1';
-            opblock.style.boxShadow = '0 0 15px rgba(111, 66, 193, 0.5)';
-
-            const descWrapper = elSummary.querySelector(".opblock-summary-description");
-            const alreadyBadge = descWrapper?.querySelector(".new-api-badge");
-
-            if (descWrapper && !alreadyBadge) {
-              const badge = document.createElement("span");
-              badge.textContent = "NEW";
-              badge.className = "new-api-badge";
-              badge.style.backgroundColor = "#6F42C1";
-              badge.style.color = "#fff";
-              badge.style.padding = "2px 8px";
-              badge.style.marginLeft = "8px";
-              badge.style.borderRadius = "8px";
-              badge.style.fontSize = "12px";
-              badge.style.fontWeight = "bold";
-              badge.style.display = "inline-block";
-
-              descWrapper.appendChild(badge);
-              console.log(`🎉 NEW 뱃지 추가 완료: ${key}`);
-            }
-
-            elSummary?.addEventListener("click", () => {
-              markApiAsSeen(key, "new");
-              opblock.style.backgroundColor = '';
-              opblock.style.borderLeft = '';
-              opblock.style.boxShadow = '';
-              const badge = opblock.querySelector(".new-api-badge");
-              if (badge) badge.remove();
-            });
-          }
-        });
-      }
-    });
-  });
-}
-
-
-// ✅ 상태별 강조
-function highlightApiStatusFromDescription() {
-  const spec = window.ui.specSelectors.specJson().toJS();
-  const paths = spec.paths;
-
-  // ✅ 이모티콘 → 텍스트 역맵 생성
-  const emojiToTextMap = Object.entries(apiStatusMap).reduce((map, [emoji, text]) => {
-    map[emoji] = text;
-    return map;
-  }, {});
-
-  const dismissibleStatuses = ["✅", "⬆️"]; // 여전히 이모티콘으로 감지
-
-  Object.entries(paths).forEach(([path, methods]) => {
-    Object.entries(methods).forEach(([method, operation]) => {
-      const text = `${operation.summary || ""} ${operation.description || ""}`;
-
-      // ✅ summary에 이모티콘이 포함되어 있으면 감지
-      const matchedEmoji = Object.keys(emojiToTextMap).find(emoji => text.includes(emoji));
-      const matchedStatus = matchedEmoji ? emojiToTextMap[matchedEmoji] : undefined;
-
-//      console.log(`🔍 [STATUS] key=${method.toUpperCase()} ${path}, emoji=${matchedEmoji}, status=${matchedStatus}`);
-      if (!matchedStatus) return;
-
-      const key = `${method.toUpperCase()} ${path}`;
-      if (dismissibleStatuses.includes(matchedEmoji) && isApiSeenRecently(key)) return;
-
-      const opblocks = document.querySelectorAll(`.opblock`);
-      opblocks.forEach(opblock => {
-        const elSummary = opblock.querySelector('.opblock-summary');
-        const elPath = elSummary?.querySelector('.opblock-summary-path');
-        const elMethod = elSummary?.querySelector('.opblock-summary-method');
-
-        const matchesPath = elPath?.textContent === path;
-        const matchesMethod = elMethod?.textContent?.toLowerCase() === method;
-
-        if (matchesPath && matchesMethod) {
-          opblock.classList.add(`status-${matchedStatus}`);
-          console.log(`✅ [STATUS] 클래스 적용 완료: status-${matchedStatus}`);
-
-          const descWrapper = elSummary.querySelector(".opblock-summary-description");
-          if (!descWrapper) {
-            console.warn(`❌ [STATUS] descWrapper 없음: ${key}`);
-          }
-
-          const alreadyBadge = descWrapper?.querySelector(`.badge-${matchedStatus}`);
-          if (alreadyBadge) {
-            console.warn(`⚠️ [STATUS] 이미 badge 존재함: ${key}`);
-          }
-
-          if (descWrapper && !alreadyBadge) {
-            const badge = document.createElement("span");
-            badge.textContent = matchedStatus; // 텍스트만 출력
-            badge.className = `badge-${matchedStatus}`;
-            badge.dataset.status = matchedStatus;
-            badge.style.marginRight = "8px";
-
-            badge.addEventListener("click", () => {
-              markApiAsSeen(key, "status");
-
-              badge.remove();
-
-              const status = badge.dataset.status;
-              opblock.classList.remove(`status-${status}`);
-              opblock.style.backgroundColor = '';
-              opblock.style.borderLeft = '';
-              opblock.style.boxShadow = '';
-            });
-
-            descWrapper.appendChild(badge);
-            console.log(`✅ [STATUS] badge 추가 완료: ${key}`);
-          }
-        }
-      });
-    });
-  });
+  return true;
 }

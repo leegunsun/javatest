@@ -3,10 +3,9 @@ import groovy.json.JsonOutput
 def baseDir = file('src/main/java/com/example/open/domain')
 def outputFile = file('src/main/resources/static/swagger-status/api-meta.json')
 
-
 task generateApiMeta {
     group = 'build setup'
-    description = 'Git blame 기반으로 Swagger용 api-meta.json 생성'
+    description = 'Git blame 기반으로 Swagger용 api-meta.json 생성 (Controller별 tag, method 구조화)'
 
     outputs.file(outputFile)
 
@@ -25,53 +24,84 @@ task generateApiMeta {
 
                 subDir.eachFileRecurse { file ->
                     if (file.name.endsWith('.java')) {
+                        def lines = file.readLines()
                         def className = file.absolutePath
                                 .replace(project.projectDir.absolutePath + File.separator + "src${File.separator}main${File.separator}java${File.separator}", "")
-                                .replaceAll("[/\\\\]", ".") // 모든 OS 호환
+                                .replaceAll("[/\\\\]", ".")
                                 .replace(".java", "")
 
-                        def lines = file.readLines()
+                        def controllerTagName = null
+                        def controllerTagDescription = null
+                        def isTagBlock = false
+                        def tagBlock = ""
 
+                        lines.each { line ->
+                            if (line.contains("@Tag(")) {
+                                isTagBlock = true
+                            }
+                            if (isTagBlock) {
+                                tagBlock += line.trim()
+                                // 블록 끝을 만났을 때
+                                if (line.contains(")")) {
+                                    isTagBlock = false
+                                    def tagMatcher = tagBlock =~ /@Tag\(\s*name\s*=\s*"([^"]+)"\s*,\s*description\s*=\s*"([^"]+)"\s*\)/
+                                    if (tagMatcher.find()) {
+                                        controllerTagName = tagMatcher.group(1)
+                                        controllerTagDescription = tagMatcher.group(2)
+                                        println "🔖 @Tag 발견: name=${controllerTagName}, description=${controllerTagDescription}"
+                                    } else {
+                                        println "⚠️  @Tag 파싱 실패: ${tagBlock}"
+                                    }
+                                    tagBlock = "" // 다음을 위해 초기화
+                                }
+                            }
+                        }
+
+
+                        if (controllerTagName == null) {
+                            println "⚠️  @Tag 정보 없음 (건너뜀): ${file.name}"
+                            return
+                        }
+
+                        def methodsMap = [:]
                         def pendingOperation = false
-                        def operationSummaryLine = -1
-                        def storedMethodName = null
-
                         def startLine = -1
+                        def storedMethodName = null
 
                         lines.eachWithIndex { line, i ->
                             if (line.contains("@Operation")) {
                                 pendingOperation = true
-                                startLine = i  // @Operation 시작 줄 저장
+                                startLine = i
                             }
 
-                            if (pendingOperation && (line.contains("summary") || line.contains("description"))) {
-                                operationSummaryLine = i  // summary 줄 저장
-                            }
-
-                            def methodMatcher = line =~ /public\s+[\w<>\[\],\s]+?\s+(\w+)\s*\(/
-                            if (pendingOperation && methodMatcher && startLine >= 0) {
+                            def methodMatcher = line =~ /public\s+[\w<>,\[\]\s]+\s+(\w+)\s*\(/
+                            if (pendingOperation && methodMatcher) {
                                 storedMethodName = methodMatcher[0][1]
+                                def endLine = i + 1
 
-                                def endLine = i + 1  // 0-based 인덱스 i에 +1을 해서 실제 파일의 행 번호
                                 def blame = "git blame -L ${startLine+1},${endLine} ${file.absolutePath}".execute().text
-//                                println "DEBUG-NEW: file=${file.name}, start=${startLine+1}, end=${endLine}"
                                 def dateMatch = (blame =~ /(\d{4}-\d{2}-\d{2})/)
                                 def allDates = dateMatch.collect { it[1] }
                                 def date = allDates ? allDates.sort().last() : 'unknown'
 
-                                def key = "${className}#${storedMethodName}"
-                                if (!metaMap.containsKey(key)) {
-                                    metaMap[key] = date
-                                }
+                                methodsMap[storedMethodName] = [ date: date ]
 
                                 // 초기화
                                 pendingOperation = false
-                                operationSummaryLine = -1
                                 startLine = -1
                                 storedMethodName = null
                             }
                         }
 
+                        if (!metaMap.containsKey(className)) {
+                            metaMap[className] = [
+                                    tag: [
+                                            name: controllerTagName,
+                                            description: controllerTagDescription
+                                    ],
+                                    methods: methodsMap
+                            ]
+                        }
                     }
                 }
             }
