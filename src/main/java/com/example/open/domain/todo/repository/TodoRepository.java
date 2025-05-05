@@ -20,8 +20,8 @@ public class TodoRepository {
     }
 
     public Optional<Todo> findById(Long id) {
-        String sql = "SELECT * FROM todos WHERE id = ?";
-        List<Todo> result = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Todo.class));
+        String sql = "SELECT * FROM users WHERE id = ?";
+        List<Todo> result = jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Todo.class), id);
         return result.stream().findFirst();
     }
 

@@ -24,8 +24,7 @@ public class SecurityConfig {
                                 "/swagger-custom.js",      // ✅ 직접 작성한 JS도 필요 시 허용
                                 "/swagger-custom.css"
                         ).permitAll()
-                        // 예시로 추가된 API
-                        .requestMatchers("/todos").permitAll()
+                        .requestMatchers("/**").permitAll()
                         // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 );

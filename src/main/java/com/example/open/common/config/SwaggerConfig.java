@@ -38,8 +38,17 @@ public class SwaggerConfig {
     @Bean
     public GroupedOpenApi memberApi() {
         return GroupedOpenApi.builder()
-                .group("2")
+                .group("memberApi")
                 .displayName("회원 API")
+                .packagesToScan("com.example.project.member.controller")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi memberApiSub() {
+        return GroupedOpenApi.builder()
+                .group("memberApi.1")
+                .displayName("회원 API 하위목록")
                 .packagesToScan("com.example.project.member.controller")
                 .build();
     }

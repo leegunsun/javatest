@@ -18,6 +18,11 @@ spring:
       nodes:
         - localhost:31971
       max-redirects: 3
+  jpa:
+    properties:
+      hibernate:
+        show_sql=true: true
+        format_sql: true
 
 server:
   port: 8082

@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <title>Custom Swagger UI</title>
+    <link rel="icon" type="image/png" href="/swagger-ui/favicon.png" />
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
     <link rel="stylesheet" href="/swagger-ui/swagger-custom.css">
+    <script type="module" src="/swagger-ui/scripts/main.js"></script>
     <style>
         /* 전체 배경 색상 */
         body {
@@ -61,46 +63,29 @@
 </head>
 <body>
 
-<!-- 🔘 툴 버튼 영역 -->
+<!-- ① 도구 버튼 전용 컨테이너: 절대 배치, z-index로 버튼만 위에 띄우기 -->
 <div class="swagger-tool-container">
-    <button id="refresh-page-btn" class="swagger-tool-btn" onclick="refreshPage()">새로고침</button>
-    <button id="reset-localstorage-btn" class="swagger-tool-btn" onclick="clearLocalStorage()">🗑️ LocalStorage 초기화</button>
-    <button id="reset-cookie-btn" class="swagger-tool-btn" onclick="clearCookies()">🍪 쿠키 초기화</button>
+    <div id="new-api-counter"
+         class="swagger-tool-btn"
+         style="background-color: #6F42C1; cursor: default;">
+        NEW API: 0개
+    </div>
+    <button id="refresh-page-btn" class="swagger-tool-btn">새로고침</button>
+    <button id="reset-localstorage-btn" class="swagger-tool-btn">🗑️ LocalStorage 초기화</button>
+    <button id="reset-cookie-btn" class="swagger-tool-btn">🍪 쿠키 초기화</button>
 </div>
 
-<!-- Swagger UI 출력 영역 -->
-<div id="swagger-ui"></div>
+<!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
+<div class="main-container">
+    <nav class="sidebar">
+        <h3>API 그룹</h3>
+        <ul id="api-tree"></ul>
+    </nav>
+    <section id="swagger-ui"></section>
+</div>
 
 <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
 <script src="/swagger-ui/swagger-custom.js"></script>
-<script>
-    function clearLocalStorage() {
-      if (confirm("정말로 LocalStorage를 초기화하시겠습니까?")) {
-        localStorage.clear();
-        alert("LocalStorage가 초기화되었습니다. 페이지를 새로고침합니다.");
-        location.reload();
-      }
-    }
-
-    function clearCookies() {
-      if (confirm("정말로 모든 쿠키를 초기화하시겠습니까?")) {
-        const cookies = document.cookie.split(";");
-
-        for (let cookie of cookies) {
-          const eqPos = cookie.indexOf("=");
-          const name = eqPos > -1 ? cookie.substring(0, eqPos).trim() : cookie.trim();
-          document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-        }
-
-        alert("쿠키가 초기화되었습니다. 페이지를 새로고침합니다.");
-        location.reload();
-      }
-    }
-
-    function refreshPage() {
-      location.reload();
-    }
-</script>
 
 </body>
 </html>
