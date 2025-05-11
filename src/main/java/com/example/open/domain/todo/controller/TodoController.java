@@ -1,9 +1,16 @@
 package com.example.open.domain.todo.controller;
 
 import com.example.open.common.utile.ApiWorkStateLabel;
+import com.example.open.domain.todo.dto.contract.PaymentBase;
+import com.example.open.domain.todo.dto.internal.CardPaymentDTO;
+import com.example.open.domain.todo.dto.internal.KakaoPayDTO;
 import com.example.open.domain.todo.service.TodoService;
 import com.example.open.domain.todo.entity.Todo;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -37,13 +45,29 @@ public class TodoController {
 
     @Operation(
             summary = ApiWorkStateLabel.WORKING + "회원 가입 API2",
-            description = "2025-04-20 신규 추가된 API입니다.5"
+            description = "2025-04-20 신규 추가된 API입니다.5",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "성공적으로 반환된 다형성 리스트",
+                            content = @Content(
+                                    array = @ArraySchema(
+                                            schema = @Schema(anyOf = {CardPaymentDTO.class, KakaoPayDTO.class})
+                                    )
+                            )
+                    )
+            }
     )
     @GetMapping("/set")
-    public String setSession(HttpSession session, @RequestParam String value) {
-        session.setAttribute("key", value);
-        return "세션 저장됨: " + value;
+    public ResponseEntity<List<PaymentBase>> setSession(HttpSession session) {
+
+        List<PaymentBase> paymentBaseList = new ArrayList<>();
+        paymentBaseList.add(new CardPaymentDTO("cardValue2", "cardValue21", "cardValue22", "cardValue23"));
+        paymentBaseList.add(new KakaoPayDTO("kakaoValue1", "kakaoValue11", "kakaoValue12"));
+
+        return ResponseEntity.ok(paymentBaseList);
     }
+
 
     @Operation(
             summary = ApiWorkStateLabel.UPDATE + "회원 가입 API",

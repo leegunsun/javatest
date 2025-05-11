@@ -56,24 +56,20 @@ tasks.named('test') {
 
 
 
-def envFile = file(".env")
 
-if (envFile.exists()) {
-	envFile.eachLine { line ->
-		if (!line.trim().startsWith("#") && line.contains("=")) {
-			def (key, value) = line.split("=", 2)
-			if (!System.getenv().containsKey(key)) {
-				project.ext.set(key.trim(), value.trim())
-			}
-		}
-	}
-}
-
-def generateApiMetaFlag = project.hasProperty('GENERATE_API_META') && project.GENERATE_API_META == 'true'
+def activeProfile = System.getenv('GENERATE_API_META')
+def generateApiMetaFlag = activeProfile != 'prod'
 
 if (generateApiMetaFlag) {
-	println "✅ generateApiMeta.gradle 적용됨 (.env 기준)"
+	println "✅ generateApiMeta.gradle 적용됨"
 	apply from: 'generateApiMeta.gradle'
+
+	// ✅ 항상 실행되도록 설정 (불필요한 캐싱 방지)
+	tasks.named('generateApiMeta') {
+		configure {
+			outputs.upToDateWhen { false }
+		}
+	}
 
 	tasks.named('build') {
 		dependsOn 'generateApiMeta'
@@ -83,5 +79,5 @@ if (generateApiMetaFlag) {
 		dependsOn 'generateApiMeta'
 	}
 } else {
-	println "⛔ generateApiMeta.gradle 미적용 (.env 기준)"
+	println "⛔ generateApiMeta.gradle 미적용"
 }

@@ -1,13 +1,8 @@
 package com.example.open.common.utile;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
 
 @Component
 public class ApiWorkStateLabel {
@@ -63,19 +58,4 @@ public class ApiWorkStateLabel {
 //        mapper.writeValue(file, exportTextMap);
 //        System.out.println("✅ JSON 파일 생성됨: " + file.getAbsolutePath());
 //    }
-
-    // ✅ 화면 출력 등에서 이모티콘과 텍스트를 함께 보여주고 싶을 경우
-    public static String getDisplayLabel(String code) {
-        return switch (code) {
-            case "WORKING" -> WORKING + " " + WORKING_TEXT;
-            case "OK" -> OK + " " + OK_TEXT;
-            case "UPDATE" -> UPDATE + " " + UPDATE_TEXT;
-            case "NOT_WORKING" -> NOT_WORKING + " " + NOT_WORKING_TEXT;
-            case "TEST" -> TEST + " " + TEST_TEXT;
-            case "TEST_COMPLETE" -> TEST_COMPLETE + " " + TEST_COMPLETE_TEXT;
-            case "TEST_FAIL" -> TEST_FAIL + " " + TEST_FAIL_TEXT;
-            case "TEST_SUCCESS" -> TEST_SUCCESS + " " + TEST_SUCCESS_TEXT;
-            default -> code;
-        };
-    }
 }
