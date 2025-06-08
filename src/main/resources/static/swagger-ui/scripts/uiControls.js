@@ -52,6 +52,37 @@ toggleBtn.addEventListener("click", () => {
   }
 });
 
+const serverDropDownTest = document.getElementById("toggle-server-test-btn");
+
+serverDropDownTest.addEventListener("click", () => {
+  const selectElement = document.getElementById("servers");
+  const newUrl = "http://localhost:8082";
+
+  console.log("🔍 이전 선택값:", selectElement.value);
+
+  // 1. 드롭다운 값 변경
+  selectElement.value = newUrl;
+  console.log("✅ 드롭다운 값을 변경했습니다:", selectElement.value);
+
+  // 2. change 이벤트 발생
+  const event = new Event("change", { bubbles: true });
+  const dispatched = selectElement.dispatchEvent(event);
+  console.log("📣 change 이벤트 디스패치 완료. 성공 여부:", dispatched);
+
+  // 3. 상태 확인
+  setTimeout(() => {
+    try {
+      const fullState = window.ui.getSystem().getState().toJS();
+      console.log("🧩 전체 상태 트리:", fullState);
+
+      const currentDomValue = document.getElementById("servers")?.value;
+      console.log("🌐 현재 선택된 서버 URL (DOM 기준):", currentDomValue);
+    } catch (e) {
+      console.warn("⚠️ 상태 확인 실패:", e);
+    }
+  }, 500);
+});
+
 // 버튼에 이벤트 핸들러 바인딩
 document
   .getElementById("refresh-page-btn")
