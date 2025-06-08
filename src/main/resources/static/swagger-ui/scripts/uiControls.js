@@ -58,6 +58,9 @@ serverDropDownTest.addEventListener("click", () => {
   const selectElement = document.getElementById("servers");
   const newUrl = "http://localhost:8082";
 
+  const fullState1 = window.ui.getSystem().getState().toJS();
+  console.log("🧩 전체 상태 트리 1:", fullState1);
+
   console.log("🔍 이전 선택값:", selectElement.value);
 
   // 1. 드롭다운 값 변경
@@ -73,7 +76,7 @@ serverDropDownTest.addEventListener("click", () => {
   setTimeout(() => {
     try {
       const fullState = window.ui.getSystem().getState().toJS();
-      console.log("🧩 전체 상태 트리:", fullState);
+      console.log("🧩 전체 상태 트리 2:", fullState);
 
       const currentDomValue = document.getElementById("servers")?.value;
       console.log("🌐 현재 선택된 서버 URL (DOM 기준):", currentDomValue);
