@@ -1,6 +1,5 @@
-
-
-/* 여전히 markdown 내 텍스트를 강조하고 싶다면 */.markdown p {
+/* 여전히 markdown 내 텍스트를 강조하고 싶다면 */
+.markdown p {
   font-size: 14px;
 }
 .markdown p:has(span:contains("2025")) {
@@ -19,11 +18,11 @@
 }
 
 .opblock.status-작업중 {
-  background-color: #FFF8E1 !important;
-  border-left: 8px solid #FFC107 !important;
+  background-color: #fff8e1 !important;
+  border-left: 8px solid #ffc107 !important;
 }
 .opblock-summary-description .badge-작업중 {
-  background-color: #FFC107;
+  background-color: #ffc107;
   color: white;
   padding: 2px 6px;
   margin-left: 6px;
@@ -33,11 +32,11 @@
 }
 
 .opblock.status-작업완료 {
-  background-color: #E6F4EA !important;
-  border-left: 8px solid #28A745 !important;
+  background-color: #e6f4ea !important;
+  border-left: 8px solid #28a745 !important;
 }
 .opblock-summary-description .badge-작업완료 {
-  background-color: #28A745;
+  background-color: #28a745;
   color: white;
   padding: 2px 6px;
   margin-left: 6px;
@@ -47,9 +46,11 @@
 }
 
 .opblock.status-업데이트 {
-  background-color: #E8F0FE !important; /* 연한 파랑 */  border-left: 8px solid #0D6EFD !important; /* 진한 파랑 */}
+  background-color: #e8f0fe !important; /* 연한 파랑 */
+  border-left: 8px solid #0d6efd !important; /* 진한 파랑 */
+}
 .opblock-summary-description .badge-업데이트 {
-  background-color: #0D6EFD;
+  background-color: #0d6efd;
   color: white;
   padding: 2px 6px;
   margin-left: 6px;
@@ -59,11 +60,11 @@
 }
 
 .opblock.status-작업안함 {
-  background-color: #F0F0F0 !important;
-  border-left: 8px solid #6C757D !important;
+  background-color: #f0f0f0 !important;
+  border-left: 8px solid #6c757d !important;
 }
 .opblock-summary-description .badge-작업안함 {
-  background-color: #6C757D;
+  background-color: #6c757d;
   color: white;
   padding: 2px 6px;
   margin-left: 6px;
@@ -73,11 +74,11 @@
 }
 
 .opblock.status-테스트중 {
-  background-color: #E0F0FF !important;
-  border-left: 8px solid #007BFF !important;
+  background-color: #e0f0ff !important;
+  border-left: 8px solid #007bff !important;
 }
 .opblock-summary-description .badge-테스트중 {
-  background-color: #007BFF;
+  background-color: #007bff;
   color: white;
   padding: 2px 6px;
   margin-left: 6px;
@@ -87,7 +88,7 @@
 }
 
 .opblock.status-테스트완료 {
-  background-color: #E8F5E9 !important;
+  background-color: #e8f5e9 !important;
   border-left: 8px solid #198754 !important;
 }
 .opblock-summary-description .badge-테스트완료 {
@@ -101,11 +102,11 @@
 }
 
 .opblock.status-테스트실패 {
-  background-color: #FDECEA !important;
-  border-left: 8px solid #DC3545 !important;
+  background-color: #fdecea !important;
+  border-left: 8px solid #dc3545 !important;
 }
 .opblock-summary-description .badge-테스트실패 {
-  background-color: #DC3545;
+  background-color: #dc3545;
   color: white;
   padding: 2px 6px;
   margin-left: 6px;
@@ -115,11 +116,11 @@
 }
 
 .opblock.status-테스트성공 {
-  background-color: #E0F7F4 !important;
-  border-left: 8px solid #20C997 !important;
+  background-color: #e0f7f4 !important;
+  border-left: 8px solid #20c997 !important;
 }
 .opblock-summary-description .badge-테스트성공 {
-  background-color: #20C997;
+  background-color: #20c997;
   color: white;
   padding: 2px 6px;
   margin-left: 6px;
@@ -128,28 +129,83 @@
   font-weight: bold;
 }
 
+.sidebar.collapsed {
+  width: 0;
+  padding: 0;
+  border: none;
+  overflow: hidden;
+  transition: width 0.3s ease, padding 0.3s ease;
+}
+
+/* 사이드바 내부 텍스트들에 부드러운 페이드 처리 */
+.sidebar-content {
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#swagger-ui.sidebar-collapsed {
+  margin-left: 0 !important;
+  transition: margin-left 0.3s ease;
+}
+
+/* #toggle-sidebar-btn {
+  position: sticky;
+  background-color: #343a40;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+} */
+
 .main-container {
   display: flex;
   height: 100vh;
-  margin: 0;            /* body 기본 여백 제거 */
+  margin: 0; /* body 기본 여백 제거 */
   padding: 0;
 }
 .sidebar {
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  bottom: 0;
   width: 220px;
   background: #f8f9fa;
   border-right: 1px solid #ddd;
   overflow-y: auto;
   padding: 16px;
   font-size: 14px;
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+
+  /* 핵심: 부드럽게 닫기/열기 위해 width와 padding에 transition 추가 */
+  transition: width 0.3s ease, padding 0.3s ease;
 }
-.sidebar ul { list-style: none; padding-left: 0; }
-.sidebar li { margin: 4px 0; cursor: pointer; }
-.sidebar li > span { display: inline-flex; align-items: center; }
-.sidebar li.active > span { font-weight: bold; color: #007bff; }
-.sidebar li .children { margin-left: 16px; display: none; }
-.sidebar li.open .children { display: block; }
+.sidebar ul {
+  list-style: none;
+  padding-left: 0;
+}
+.sidebar li {
+  margin: 4px 0;
+  cursor: pointer;
+}
+.sidebar li > span {
+  display: inline-flex;
+  align-items: center;
+}
+.sidebar li.active > span {
+  font-weight: bold;
+  color: #007bff;
+}
+.sidebar li .children {
+  margin-left: 16px;
+  display: none;
+}
+.sidebar li.open .children {
+  display: block;
+}
 
 /* Swagger UI에 사이드바 너비만큼 마진 */
 #swagger-ui {
@@ -157,10 +213,13 @@
   margin-left: 250px;
   height: 100vh;
   overflow: auto;
+
+  /* 여기 수정 */
+  transition: margin-left 0.3s ease, width 0.3s ease, padding 0.3s ease;
 }
 .swagger-tool-container {
-  position: fixed;  /* fixed로 변경 */
-  top: 10px;        /* 상단에서 10px 아래 */
-  right: 10px;      /* 우측에서 10px 왼쪽 */
-  z-index: 9999;    /* 다른 요소 위에 띄우기 */
+  position: fixed; /* fixed로 변경 */
+  top: 10px; /* 상단에서 10px 아래 */
+  right: 10px; /* 우측에서 10px 왼쪽 */
+  z-index: 9999; /* 다른 요소 위에 띄우기 */
 }

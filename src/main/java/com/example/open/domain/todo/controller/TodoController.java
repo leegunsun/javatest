@@ -61,9 +61,10 @@ public class TodoController {
     @GetMapping("/set")
     public ResponseEntity<List<PaymentBase>> setSession(HttpSession session) {
 
-        List<PaymentBase> paymentBaseList = new ArrayList<>();
-        paymentBaseList.add(new CardPaymentDTO("cardValue2", "cardValue21", "cardValue22", "cardValue23"));
-        paymentBaseList.add(new KakaoPayDTO("kakaoValue1", "kakaoValue11", "kakaoValue12"));
+        List<PaymentBase> paymentBaseList = new ArrayList<>(List.of(
+                new CardPaymentDTO("cardValue2", "cardValue21", "cardValue22", "cardValue23"),
+                new KakaoPayDTO("kakaoValue1", "kakaoValue11", "kakaoValue12")
+        ));
 
         return ResponseEntity.ok(paymentBaseList);
     }

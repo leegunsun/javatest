@@ -1,91 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <title>Custom Swagger UI</title>
     <link rel="icon" type="image/png" href="/swagger-ui/favicon.png" />
-    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
-    <link rel="stylesheet" href="/swagger-ui/swagger-custom.css">
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/swagger-ui-dist/swagger-ui.css"
+    />
+    <link rel="stylesheet" href="/swagger-ui/swagger-custom.css" />
     <script type="module" src="/swagger-ui/scripts/main.js"></script>
     <style>
-        /* 전체 배경 색상 */
-        body {
-          background-color: #f5f5f5;
-          margin: 0;
-          font-family: sans-serif;
-        }
+      /* 전체 배경 색상 */
+      body {
+        background-color: #f5f5f5;
+        margin: 0;
+        font-family: sans-serif;
+      }
 
-        /* 버튼들을 감싸는 컨테이너 */
-        .swagger-tool-container {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          z-index: 9999;
-          display: flex;
-          gap: 10px;
-        }
+      /* 버튼들을 감싸는 컨테이너 */
+      .swagger-tool-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 9999;
+        display: flex;
+        gap: 10px;
+      }
 
-        /* 버튼 공통 스타일 */
-        .swagger-tool-btn {
-          padding: 8px 12px;
+      /* 버튼 공통 스타일 */
+      .swagger-tool-btn {
+        padding: 8px 12px;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      /* 각 버튼 개별 색상 */
+      #refresh-page-btn {
+        background-color: #6db33f;
+      }
+
+      #refresh-page-btn:hover {
+        background-color: #388e3c;
+      }
+
+      #reset-localstorage-btn {
+        background-color: #f44336;
+      }
+
+      #reset-localstorage-btn:hover {
+        background-color: #d32f2f;
+      }
+
+      #reset-cookie-btn {
+        background-color: #2196f3;
+      }
+
+      #reset-cookie-btn:hover {
+        background-color: #1976d2;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ① 도구 버튼 전용 컨테이너: 절대 배치, z-index로 버튼만 위에 띄우기 -->
+    <div class="swagger-tool-container">
+      <div
+        id="new-api-counter"
+        class="swagger-tool-btn"
+        style="background-color: #6f42c1; cursor: default"
+      >
+        NEW API: 0개
+      </div>
+      <button id="refresh-page-btn" class="swagger-tool-btn">새로고침</button>
+      <button id="reset-localstorage-btn" class="swagger-tool-btn">
+        🗑️ LocalStorage 초기화
+      </button>
+      <button id="reset-cookie-btn" class="swagger-tool-btn">
+        🍪 쿠키 초기화
+      </button>
+    </div>
+
+    <!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
+    <div class="main-container" style="flex-direction: row">
+      <nav class="sidebar">
+        <div class="sidebar-content">
+          <h3>API 그룹</h3>
+          <ul id="api-tree"></ul>
+        </div>
+      </nav>
+      <button
+        id="toggle-sidebar-btn"
+        style="
+          position: sticky;
+          background-color: #343a40;
           color: white;
           border: none;
-          border-radius: 6px;
-          font-weight: bold;
+          padding: 8px 12px;
+          border-radius: 0 6px 6px 0;
           cursor: pointer;
-        }
-
-        /* 각 버튼 개별 색상 */
-        #refresh-page-btn {
-          background-color: #6DB33F;
-        }
-
-        #refresh-page-btn:hover {
-          background-color: #388E3C;
-        }
-
-        #reset-localstorage-btn {
-          background-color: #f44336;
-        }
-
-        #reset-localstorage-btn:hover {
-          background-color: #d32f2f;
-        }
-
-        #reset-cookie-btn {
-          background-color: #2196F3;
-        }
-
-        #reset-cookie-btn:hover {
-          background-color: #1976D2;
-        }
-    </style>
-</head>
-<body>
-
-<!-- ① 도구 버튼 전용 컨테이너: 절대 배치, z-index로 버튼만 위에 띄우기 -->
-<div class="swagger-tool-container">
-    <div id="new-api-counter"
-         class="swagger-tool-btn"
-         style="background-color: #6F42C1; cursor: default;">
-        NEW API: 0개
+        "
+      >
+        ☰
+      </button>
+      <section id="swagger-ui"></section>
     </div>
-    <button id="refresh-page-btn" class="swagger-tool-btn">새로고침</button>
-    <button id="reset-localstorage-btn" class="swagger-tool-btn">🗑️ LocalStorage 초기화</button>
-    <button id="reset-cookie-btn" class="swagger-tool-btn">🍪 쿠키 초기화</button>
-</div>
 
-<!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
-<div class="main-container">
-    <nav class="sidebar">
-        <h3>API 그룹</h3>
-        <ul id="api-tree"></ul>
-    </nav>
-    <section id="swagger-ui"></section>
-</div>
-
-<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
-<script src="/swagger-ui/swagger-custom.js"></script>
-
-</body>
+    <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+  </body>
 </html>
