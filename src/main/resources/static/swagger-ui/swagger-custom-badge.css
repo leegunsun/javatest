@@ -1,0 +1,122 @@
+
+.opblock-summary-description span[class^="badge-"] {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 6px;
+  color: white;
+}
+
+.opblock.status-작업중 {
+  background-color: #fff8e1 !important;
+  border-left: 8px solid #ffc107 !important;
+}
+.opblock-summary-description .badge-작업중 {
+  background-color: #ffc107;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-작업완료 {
+  background-color: #e6f4ea !important;
+  border-left: 8px solid #28a745 !important;
+}
+.opblock-summary-description .badge-작업완료 {
+  background-color: #28a745;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-업데이트 {
+  background-color: #e8f0fe !important; /* 연한 파랑 */
+  border-left: 8px solid #0d6efd !important; /* 진한 파랑 */
+}
+.opblock-summary-description .badge-업데이트 {
+  background-color: #0d6efd;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-작업안함 {
+  background-color: #f0f0f0 !important;
+  border-left: 8px solid #6c757d !important;
+}
+.opblock-summary-description .badge-작업안함 {
+  background-color: #6c757d;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트중 {
+  background-color: #e0f0ff !important;
+  border-left: 8px solid #007bff !important;
+}
+.opblock-summary-description .badge-테스트중 {
+  background-color: #007bff;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트완료 {
+  background-color: #e8f5e9 !important;
+  border-left: 8px solid #198754 !important;
+}
+.opblock-summary-description .badge-테스트완료 {
+  background-color: #198754;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트실패 {
+  background-color: #fdecea !important;
+  border-left: 8px solid #dc3545 !important;
+}
+.opblock-summary-description .badge-테스트실패 {
+  background-color: #dc3545;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트성공 {
+  background-color: #e0f7f4 !important;
+  border-left: 8px solid #20c997 !important;
+}
+.opblock-summary-description .badge-테스트성공 {
+  background-color: #20c997;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}

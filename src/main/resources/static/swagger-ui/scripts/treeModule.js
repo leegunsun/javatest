@@ -1,4 +1,5 @@
 import { loadSwagger, rawSpec, convertSpec, loadSwagger2 } from "./swaggerInit.js";
+import { setApiStatusMap, setApiCreatedDateMap } from "./state.js";
 
 let draggedNodeEl = null;
 let draggedGroup = null;
@@ -93,17 +94,6 @@ function insertNodeBefore(tree, targetGroup, nodeToInsert) {
 
 function onDragLeave(event) {
   event.currentTarget.classList.remove("drag-over");
-}
-
-function findNodeByGroup(tree, group) {
-  for (const node of tree) {
-    if (node.group === group) return node;
-    if (node.children?.length) {
-      const found = findNodeByGroup(node.children, group);
-      if (found) return found;
-    }
-  }
-  return null;
 }
 
 function persistTree(tree) {
@@ -272,43 +262,51 @@ function selectCategory(category) {
 function addToSelection(item) {
   const container = document.getElementById("selected-subcategories");
 
-  // 이미 해당 subTagName이 있으면 중복 추가 방지
   if (document.getElementById(item.subTagName)) {
     console.warn(`⚠️ 이미 존재하는 항목입니다: ${item.subTagName}`);
     return;
   }
 
-  // ✅ rootTagName 그룹 div가 없으면 생성
   let rootGroup = document.getElementById(item.rootTagName);
   if (!rootGroup) {
     rootGroup = document.createElement("div");
     rootGroup.id = item.rootTagName;
-    rootGroup.style.marginBottom = "16px";
-    rootGroup.style.border = "1px solid #ccc";
-    rootGroup.style.padding = "8px";
-    rootGroup.style.borderRadius = "8px";
+    rootGroup.classList.add("custom_side_bar-root-group");
 
-    // 그룹 제목
     const title = document.createElement("h4");
     title.textContent = `📁 ${item.rootTagName}`;
-    title.style.marginBottom = "8px";
+    title.classList.add("custom_side_bar-root-group-title");
     rootGroup.appendChild(title);
 
     container.appendChild(rootGroup);
   }
 
-  // ✅ 실제 subPath 항목을 생성해서 추가
   const newItem = document.createElement("div");
   newItem.textContent = item.subPath;
   newItem.id = item.subTagName;
-  newItem.className = "subcategory";
-  newItem.style.padding = "4px 8px";
-  newItem.style.marginBottom = "4px";
-  newItem.style.background = "#f2f2f2";
-  newItem.style.borderRadius = "4px";
+  newItem.classList.add("custom_side_bar-subcategory");
 
   rootGroup.appendChild(newItem);
 
-  // ✅ 내부 데이터 목록에도 저장
   convertSpec.push(item);
 }
+
+
+export function setSideBar(statusMap, createdMap, groupedList) {
+  setApiStatusMap(statusMap);
+  setApiCreatedDateMap(createdMap);
+
+  const savedTree = loadTreeFromStorage();
+  const container = document.getElementById("api-tree");
+
+  if (savedTree) {
+    setTreeState(savedTree, container);
+    renderSidebar(savedTree, container);
+  } else {
+    const tree = buildTree(groupedList);
+    const sorted = applyCustomTreeOrder(tree);
+    setTreeState(sorted, container);
+    renderSidebar(sorted, container);
+  }
+}
+

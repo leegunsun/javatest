@@ -15,7 +15,6 @@ export async function loadSwagger2() {
   // ✅ 여기서 필터링 수행
 
   const usedPath = JSON.parse(localStorage.getItem("usedPath"));
-  
 
   const filteredSpec = filterPathsByUsedPath(
     structuredClone(getData),
@@ -28,7 +27,6 @@ export async function loadSwagger2() {
     layout: "BaseLayout",
     defaultModelsExpandDepth: 0,
     onComplete: () => {
-
       setTimeout(() => {
         const selectElement2 = document.getElementById("servers");
         if (selectElement2) {
@@ -146,7 +144,11 @@ export async function loadSwagger(groupName) {
 }
 
 function filterPathsByUsedPath(originalSpec, usedPathList) {
-  rawSpec = [];
+  // rawSpec = [];
+
+  if (usedPathList == null) {
+    return originalSpec;
+  }
 
   const filteredPaths = Object.entries(originalSpec.paths)
     .map(([path, methods]) => {
@@ -156,11 +158,11 @@ function filterPathsByUsedPath(originalSpec, usedPathList) {
           const usedPath = path.split("/");
 
           rawSpec.push({
-            "rootTagName": operation.tags[0],
-            "subTagName": operation.operationId + usedPath[2],
-            "method": method,
-            "rootPath": usedPath[1],
-            "subPath": usedPath[2],
+            rootTagName: operation.tags[0],
+            subTagName: operation.operationId + usedPath[2],
+            method: method,
+            rootPath: usedPath[1],
+            subPath: usedPath[2],
           });
 
           return usedPathList.some((entry) => {
