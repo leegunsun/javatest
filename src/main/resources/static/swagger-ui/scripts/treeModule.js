@@ -268,21 +268,72 @@ function selectCategory(category) {
   });
 }
 
-function addToSelection(item) {
-  const container = document.getElementById('selected-subcategories');
+function selectCategory(category) {
+  const list = rawSpec.filter((e, index) => {
+    console.log(`🔍 [${index}] rootPath:`, e.rootPath, "| category:", category);
 
-  // 중복 검사: ID가 이미 존재하면 추가하지 않음
+    const isMatch = e.rootPath == category;
+
+    if (isMatch) {
+      console.log(`✅ [${index}] 매칭됨 → 포함됨`);
+    } else {
+      console.log(`❌ [${index}] 매칭되지 않음 → 제외됨`);
+    }
+
+    return isMatch;
+  });
+  const container = document.getElementById("subcategory-list");
+  container.innerHTML = ""; // 초기화
+
+  list.forEach((name) => {
+    const item = document.createElement("div");
+    item.textContent = name.subPath;
+    item.style.cursor = "pointer";
+    item.onclick = () => addToSelection(name);
+    container.appendChild(item);
+  });
+}
+
+function addToSelection(item) {
+  const container = document.getElementById("selected-subcategories");
+
+  // 이미 해당 subTagName이 있으면 중복 추가 방지
   if (document.getElementById(item.subTagName)) {
     console.warn(`⚠️ 이미 존재하는 항목입니다: ${item.subTagName}`);
     return;
   }
 
-  convertSpec.push(item);
+  // ✅ rootTagName 그룹 div가 없으면 생성
+  let rootGroup = document.getElementById(item.rootTagName);
+  if (!rootGroup) {
+    rootGroup = document.createElement("div");
+    rootGroup.id = item.rootTagName;
+    rootGroup.style.marginBottom = "16px";
+    rootGroup.style.border = "1px solid #ccc";
+    rootGroup.style.padding = "8px";
+    rootGroup.style.borderRadius = "8px";
 
-  const newItem = document.createElement('div');
+    // 그룹 제목
+    const title = document.createElement("h4");
+    title.textContent = `📁 ${item.rootTagName}`;
+    title.style.marginBottom = "8px";
+    rootGroup.appendChild(title);
+
+    container.appendChild(rootGroup);
+  }
+
+  // ✅ 실제 subPath 항목을 생성해서 추가
+  const newItem = document.createElement("div");
   newItem.textContent = item.subPath;
-  newItem.style.marginBottom = '4px';
   newItem.id = item.subTagName;
+  newItem.className = "subcategory";
+  newItem.style.padding = "4px 8px";
+  newItem.style.marginBottom = "4px";
+  newItem.style.background = "#f2f2f2";
+  newItem.style.borderRadius = "4px";
 
-  container.appendChild(newItem);
+  rootGroup.appendChild(newItem);
+
+  // ✅ 내부 데이터 목록에도 저장
+  convertSpec.push(item);
 }

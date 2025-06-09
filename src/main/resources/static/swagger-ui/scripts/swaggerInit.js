@@ -28,7 +28,7 @@ export async function loadSwagger2() {
     layout: "BaseLayout",
     defaultModelsExpandDepth: 0,
     onComplete: () => {
-      console.log(`✅ Swagger UI [${groupName}] 로딩 완료`);
+
       setTimeout(() => {
         const selectElement2 = document.getElementById("servers");
         if (selectElement2) {
@@ -85,31 +85,8 @@ export async function loadSwagger(groupName) {
   const swaggerUrl = `/v3/api-docs/${groupName}`;
   const getData = await fetch(swaggerUrl).then((res) => res.json());
 
-  // ✅ 여기서 필터링 수행
-
-  const usedPath = [
-    {
-      rootTagName: "todos",
-      method: "Get",
-      rootPath: "todo",
-      subPath: "{id}",
-      subTagName : ""
-    },
-    {
-      rootTagName: "userController",
-      method: "Get",
-      rootPath: "users",
-      subPath: "{id}",
-      subTagName : ""
-    },
-  ];
-
-  const filteredSpec = filterPathsByUsedPath(
-    structuredClone(getData),
-    usedPath
-  );
   const ui = SwaggerUIBundle({
-    spec: filteredSpec,
+    spec: getData,
     dom_id: "#swagger-ui",
     presets: [SwaggerUIBundle.presets.apis],
     layout: "BaseLayout",
