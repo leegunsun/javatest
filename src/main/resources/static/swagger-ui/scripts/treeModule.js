@@ -242,31 +242,6 @@ vegetable.addEventListener("click", () => {
 
 ////
 
-function selectCategory(category) {
-  const list = rawSpec.filter((e, index) => {
-  console.log(`🔍 [${index}] rootPath:`, e.rootPath, "| category:", category);
-
-  const isMatch = e.rootPath == category;
-
-  if (isMatch) {
-    console.log(`✅ [${index}] 매칭됨 → 포함됨`);
-  } else {
-    console.log(`❌ [${index}] 매칭되지 않음 → 제외됨`);
-  }
-
-  return isMatch;
-});
-  const container = document.getElementById('subcategory-list');
-  container.innerHTML = ''; // 초기화
-
-  list.forEach(name => {
-    const item = document.createElement('div');
-    item.textContent = name.subPath;
-    item.style.cursor = 'pointer';
-    item.onclick = () => addToSelection(name);
-    container.appendChild(item);
-  });
-}
 
 function selectCategory(category) {
   const list = rawSpec.filter((e, index) => {
