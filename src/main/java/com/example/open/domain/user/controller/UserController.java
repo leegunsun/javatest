@@ -4,6 +4,7 @@ import com.example.open.common.dto.ApiResponse;
 import com.example.open.common.dto.TestDTO;
 import com.example.open.domain.user.entity.User;
 import com.example.open.domain.user.service.UserService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
+@Tag(name = "userController")
 public class UserController {
 
     private final UserService userService;

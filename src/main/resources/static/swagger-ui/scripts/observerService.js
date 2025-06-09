@@ -18,7 +18,7 @@ export function observeModelsAndHighlight() {
 export function observeApiExpandCollapse() {
   if (swaggerUiObserver) {
     swaggerUiObserver.disconnect();
-    swaggerUiObserver = null;
+    // swaggerUiObserver = null;
     console.log("✅ 이전 Swagger UI Observer 해제 완료");
   }
 

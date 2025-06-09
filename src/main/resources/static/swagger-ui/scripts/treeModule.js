@@ -50,7 +50,9 @@ function onDrop(event) {
   const targetGroup = targetEl.dataset.group;
 
   // 정리
-  document.querySelectorAll(".drag-over").forEach((el) => el.classList.remove("drag-over"));
+  document
+    .querySelectorAll(".drag-over")
+    .forEach((el) => el.classList.remove("drag-over"));
   if (draggedNodeEl) draggedNodeEl.classList.remove("dragging");
 
   if (!draggedGroup || draggedGroup === targetGroup) return;
@@ -78,14 +80,16 @@ function insertNodeBefore(tree, targetGroup, nodeToInsert) {
     }
 
     if (node.children?.length) {
-      const inserted = insertNodeBefore(node.children, targetGroup, nodeToInsert);
+      const inserted = insertNodeBefore(
+        node.children,
+        targetGroup,
+        nodeToInsert
+      );
       if (inserted) return true;
     }
   }
   return false;
 }
-
-
 
 function onDragLeave(event) {
   event.currentTarget.classList.remove("drag-over");
@@ -149,10 +153,22 @@ export function buildTree(list) {
   return roots;
 }
 
+function testCreateNode() {
+  const findTestLi = document.querySelector(
+    "#custom-api-tree > #custom-api-tree-main-test"
+  );
+
+  findTestLi.addEventListener("click", () => {
+    loadSwagger("1");
+  });
+}
+
 /**
  * 각 노드를 <li>로 렌더링하고 클릭 시 loadSwagger 호출
  */
 function createNode(node) {
+  testCreateNode();
+
   const li = document.createElement("li");
   li.draggable = true;
   li.dataset.group = node.group;

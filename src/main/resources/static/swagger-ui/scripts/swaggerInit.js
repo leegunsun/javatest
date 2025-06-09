@@ -5,10 +5,26 @@ import {
   observeApiExpandCollapse,
 } from "./observerService.js";
 
-export function loadSwagger(groupName) {
+export async function loadSwagger(groupName) {
   const swaggerUrl = `/v3/api-docs/${groupName}`;
+  const rawSpec = await fetch(swaggerUrl).then((res) => res.json());
+
+  // ✅ 여기서 필터링 수행
+
+  const usedPath = [{
+    tagName : "todos",
+    method : "Get",
+    subPath : "{id}"
+  },
+  {
+      tagName : "userController",
+      method : "Get",
+      subPath : "{id}"
+    }]
+
+  const filteredSpec = filterPathsByUsedPath(rawSpec, usedPath);
   const ui = SwaggerUIBundle({
-    url: swaggerUrl,
+    spec: filteredSpec,
     dom_id: "#swagger-ui",
     presets: [SwaggerUIBundle.presets.apis],
     layout: "BaseLayout",
@@ -45,11 +61,15 @@ export function loadSwagger(groupName) {
         }
 
         const selectElement = document.getElementById("servers");
-        selectElement.value = getUrlState;
+        if (selectElement) {
+          selectElement.value = getUrlState;
 
-        const event = new Event("change", { bubbles: true });
-        const dispatched = selectElement.dispatchEvent(event);
-        console.log("📣 change 이벤트 디스패치 완료. 성공 여부:", dispatched);
+          const event = new Event("change", { bubbles: true });
+          const dispatched = selectElement.dispatchEvent(event);
+          console.log("📣 change 이벤트 디스패치 완료. 성공 여부:", dispatched);
+        } else {
+          console.warn("⚠️ select#servers 요소가 존재하지 않음 → 건너뜀");
+        }
 
         observeModelsAndHighlight();
         observeApiExpandCollapse();
@@ -62,3 +82,43 @@ export function loadSwagger(groupName) {
   window.ui = ui;
   return ui; // ← 반환 추가
 }
+
+
+function filterPathsByUsedPath(originalSpec, usedPathList) {
+  const filteredPaths = Object.entries(originalSpec.paths)
+    .map(([path, methods]) => {
+
+      const filteredMethods = Object.entries(methods)
+        .filter(([method, operation]) => {
+          const normalizedMethod = method.toLowerCase();
+
+          return usedPathList.some(entry => {
+            const targetMethod = entry.method.toLowerCase();
+            const pathSplit = '/' + path.split('/')[1];
+            const composedPath = `/${pathSplit}/${entry.subPath}`.replace(/\/+/g, "/");
+
+            const hasTag = operation.tags?.includes(entry.tagName);
+
+            return (
+              normalizedMethod === targetMethod &&
+              path === composedPath &&
+              hasTag
+            );
+          });
+        })
+        .reduce((acc, [method, op]) => ({ ...acc, [method]: op }), {});
+
+      return Object.keys(filteredMethods).length > 0 ? [path, filteredMethods] : null;
+      
+    })
+    .filter(Boolean) // null 제거
+    .reduce((acc, [path, methods]) => ({ ...acc, [path]: methods }), {});
+
+  return {
+    ...originalSpec,
+    paths: filteredPaths,
+  };
+}
+
+
+
