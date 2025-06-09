@@ -1,4 +1,4 @@
-import { loadSwagger } from "./swaggerInit.js";
+import { loadSwagger, rawSpec, convertSpec, loadSwagger2 } from "./swaggerInit.js";
 
 let draggedNodeEl = null;
 let draggedGroup = null;
@@ -159,7 +159,7 @@ function testCreateNode() {
   );
 
   findTestLi.addEventListener("click", () => {
-    loadSwagger("1");
+    loadSwagger2();
   });
 }
 
@@ -226,4 +226,63 @@ function createNode(node) {
 export function renderSidebar(tree, container) {
   container.innerHTML = "";
   tree.forEach((node) => container.appendChild(createNode(node)));
+}
+
+const fruit = document.querySelector(".selectCategory#fruit");
+const vegetable = document.querySelector(".selectCategory#vegetable");
+
+fruit.addEventListener("click", () => {
+  selectCategory("todo");
+})
+
+vegetable.addEventListener("click", () => {
+  selectCategory("users");
+})
+
+
+////
+
+function selectCategory(category) {
+  const list = rawSpec.filter((e, index) => {
+  console.log(`🔍 [${index}] rootPath:`, e.rootPath, "| category:", category);
+
+  const isMatch = e.rootPath == category;
+
+  if (isMatch) {
+    console.log(`✅ [${index}] 매칭됨 → 포함됨`);
+  } else {
+    console.log(`❌ [${index}] 매칭되지 않음 → 제외됨`);
+  }
+
+  return isMatch;
+});
+  const container = document.getElementById('subcategory-list');
+  container.innerHTML = ''; // 초기화
+
+  list.forEach(name => {
+    const item = document.createElement('div');
+    item.textContent = name.subPath;
+    item.style.cursor = 'pointer';
+    item.onclick = () => addToSelection(name);
+    container.appendChild(item);
+  });
+}
+
+function addToSelection(item) {
+  const container = document.getElementById('selected-subcategories');
+
+  // 중복 검사: ID가 이미 존재하면 추가하지 않음
+  if (document.getElementById(item.subTagName)) {
+    console.warn(`⚠️ 이미 존재하는 항목입니다: ${item.subTagName}`);
+    return;
+  }
+
+  convertSpec.push(item);
+
+  const newItem = document.createElement('div');
+  newItem.textContent = item.subPath;
+  newItem.style.marginBottom = '4px';
+  newItem.id = item.subTagName;
+
+  container.appendChild(newItem);
 }

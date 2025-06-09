@@ -1,3 +1,5 @@
+import { convertSpec } from "./swaggerInit.js";
+
 /**
  * LocalStorage 초기화
  */
@@ -78,6 +80,11 @@ document
 // [2] 닫기 버튼 클릭 → 모달 닫기
 document.getElementById("closed-modal").addEventListener("click", () => {
   console.log("[❌ closed-modal] 닫기 버튼 클릭됨");
+  closeModal();
+});
+
+document.getElementById("save-modal").addEventListener("click", () => {
+  localStorage.setItem("usedPath", JSON.stringify(convertSpec));
   closeModal();
 });
 

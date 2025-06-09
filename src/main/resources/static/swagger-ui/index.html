@@ -85,11 +85,25 @@
 
     <!-- 모달을 감싸는 전체 배경 -->
     <div id="modal-overlay" class="hidden">
-      <!-- 모달 본체 -->
       <div id="modal">
-        <h2>모달 제목</h2>
-        <p>모달 내용이 여기에 들어갑니다.</p>
+        <div class="modal-top">
+          <div class="modal-left" id="category-list">
+            <!-- 대분류 리스트 -->
+            <ul>
+              <li class="selectCategory" id="fruit">todo</li>
+              <li class="selectCategory" id="vegetable">users</li>
+            </ul>
+          </div>
+          <div class="modal-right" id="subcategory-list">
+            <!-- 자식 분류 리스트 (선택된 대분류에 따라 변경됨) -->
+            <!-- 예: 과일 선택 시 사과, 바나나 등 -->
+          </div>
+        </div>
+        <div class="modal-bottom" id="selected-subcategories">
+          <!-- 클릭된 자식 분류 항목들이 쌓이는 영역 -->
+        </div>
         <button id="closed-modal">닫기</button>
+        <button id="save-modal">확인인</button>
       </div>
     </div>
 

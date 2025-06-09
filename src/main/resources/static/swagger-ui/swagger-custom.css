@@ -304,12 +304,42 @@
 }
 
 #modal {
+  display: flex;
+  flex-direction: column;
   background: white;
   padding: 20px 30px;
   border-radius: 10px;
-  width: 300px;
+  width: 60%;
+  height: 70%;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden; /* 내부 영역에 대한 스크롤은 개별적으로 처리 */
 }
+
+.modal-top {
+  flex: 1;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.modal-left,
+.modal-right {
+  flex: 1;
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
+.modal-bottom {
+  flex: 1;
+  background: #fafafa;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-y: auto;
+}
+
 
 #sortable-list {
   list-style: none;
