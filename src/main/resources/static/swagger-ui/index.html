@@ -83,16 +83,32 @@
       </button>
     </div>
 
+    <!-- 모달을 감싸는 전체 배경 -->
+    <div id="modal-overlay" class="hidden">
+      <!-- 모달 본체 -->
+      <div id="modal">
+        <h2>모달 제목</h2>
+        <p>모달 내용이 여기에 들어갑니다.</p>
+        <button id="closed-modal">닫기</button>
+      </div>
+    </div>
+
     <!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
     <div class="main-container" style="flex-direction: row">
       <nav class="sidebar">
-        <div class="sidebar-content">
-          <h3>API 그룹</h3>
-          <ul id="api-tree"></ul>
+        <div
+          class="empty"
+          id="empyt-box"
+          style="padding-left: 20px; flex-direction: row"
+        >
+          <div class="sidebar-content">
+            <button id="settings-btn">⚙️</button>
+            <h3>API 그룹</h3>
+            <ul id="api-tree"></ul>
+          </div>
         </div>
       </nav>
       <button id="toggle-sidebar-btn">☰</button>
-      <button id="toggle-server-test-btn">서버를 임의로 조작합니다.</button>
       <section id="swagger-ui"></section>
     </div>
 

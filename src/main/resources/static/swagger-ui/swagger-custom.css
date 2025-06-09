@@ -187,7 +187,7 @@
   background: #f8f9fa;
   border-right: 1px solid #ddd;
   overflow: hidden;
-  padding: 16px;
+  padding: 5px;
   font-size: 14px;
   white-space: nowrap; /* 텍스트 줄바꿈 방지 */
 
@@ -199,7 +199,7 @@
   width: 10px;
   border: none;
   overflow: hidden;
-  padding: 0px;
+  padding: 5px;
   transition: width 0.3s ease, padding 0.3s ease;
 }
 
@@ -241,4 +241,92 @@
   top: 10px; /* 상단에서 10px 아래 */
   right: 10px; /* 우측에서 10px 왼쪽 */
   z-index: 9999; /* 다른 요소 위에 띄우기 */
+}
+
+.node-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.node-drag-handler {
+  cursor: grab;
+  user-select: none;
+  color: #666;
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.node-drag-handler:hover {
+  transform: scale(1.1);
+  color: #000;
+}
+
+.node-title {
+  flex-grow: 1;
+}
+
+.sidebar li.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  z-index: 999;
+}
+
+.sidebar li.drag-over {
+  background-color: #e3f2fd;
+  border: 2px dashed #1976d2;
+  transition: background-color 0.2s ease, border 0.2s ease;
+}
+
+.sidebar li {
+  transition: all 0.25s ease;
+}
+
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
+}
+
+#modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#modal {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 10px;
+  width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+#sortable-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+#sortable-list li {
+  padding: 10px;
+  background-color: #f0f0f0;
+  margin-bottom: 5px;
+  cursor: grab;
+  border-radius: 5px;
+  transition: background 0.2s;
+}
+
+#sortable-list li.dragging {
+  opacity: 0.5;
+  background-color: #d0d0d0;
 }

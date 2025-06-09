@@ -52,39 +52,15 @@ toggleBtn.addEventListener("click", () => {
   }
 });
 
-const serverDropDownTest = document.getElementById("toggle-server-test-btn");
+function openModal() {
+  console.log("[🔓 openModal] 모달 열기 시도");
+  document.getElementById("modal-overlay")?.classList.remove("hidden");
+}
 
-serverDropDownTest.addEventListener("click", () => {
-  const selectElement = document.getElementById("servers");
-  const newUrl = "http://localhost:8082";
-
-  const fullState1 = window.ui.getSystem().getState().toJS();
-  console.log("🧩 전체 상태 트리 1:", fullState1);
-
-  console.log("🔍 이전 선택값:", selectElement.value);
-
-  // 1. 드롭다운 값 변경
-  selectElement.value = newUrl;
-  console.log("✅ 드롭다운 값을 변경했습니다:", selectElement.value);
-
-  // 2. change 이벤트 발생
-  const event = new Event("change", { bubbles: true });
-  const dispatched = selectElement.dispatchEvent(event);
-  console.log("📣 change 이벤트 디스패치 완료. 성공 여부:", dispatched);
-
-  // 3. 상태 확인
-  setTimeout(() => {
-    try {
-      const fullState = window.ui.getSystem().getState().toJS();
-      console.log("🧩 전체 상태 트리 2:", fullState);
-
-      const currentDomValue = document.getElementById("servers")?.value;
-      console.log("🌐 현재 선택된 서버 URL (DOM 기준):", currentDomValue);
-    } catch (e) {
-      console.warn("⚠️ 상태 확인 실패:", e);
-    }
-  }, 500);
-});
+function closeModal() {
+  console.log("[🔒 closeModal] 모달 닫기 시도");
+  document.getElementById("modal-overlay")?.classList.add("hidden");
+}
 
 // 버튼에 이벤트 핸들러 바인딩
 document
@@ -98,6 +74,33 @@ document
 document
   .getElementById("reset-cookie-btn")
   .addEventListener("click", clearCookies);
+
+// [2] 닫기 버튼 클릭 → 모달 닫기
+document.getElementById("closed-modal").addEventListener("click", () => {
+  console.log("[❌ closed-modal] 닫기 버튼 클릭됨");
+  closeModal();
+});
+
+// [3] 오버레이(배경) 클릭 → 모달 닫기 (단, 모달 본문 클릭 제외)
+document.getElementById("modal-overlay").addEventListener("click", (event) => {
+  console.log("[🖱️ modal-overlay] 클릭 발생");
+  console.log("  ➤ event.target.id:", event.target.id);
+  console.log("  ➤ event.currentTarget.id:", event.currentTarget.id);
+  console.log("  ➤ target === currentTarget ?", event.target === event.currentTarget);
+
+  if (event.target === event.currentTarget) {
+    console.log("  ✅ 배경 클릭으로 간주 → 닫기 수행");
+    closeModal();
+  } else {
+    console.log("  ⛔ 모달 본문 클릭 → 닫기 무시");
+  }
+});
+
+// [1] 설정 버튼 클릭 → 모달 열기
+document.getElementById("settings-btn").addEventListener("click", () => {
+  console.log("[⚙️ settings-btn] 설정 버튼 클릭됨");
+  openModal();
+});
 
 // 필요 시 전역으로도 노출
 window.clearLocalStorage = clearLocalStorage;
