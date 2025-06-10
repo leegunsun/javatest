@@ -86,25 +86,43 @@
     <!-- 모달을 감싸는 전체 배경 -->
     <div id="modal-overlay" class="hidden">
       <div id="modal">
+        <!-- ✅ 최상단 모달 타이틀 -->
+        <h2 class="modal-title">테스트 모달</h2>
+
+        <!-- 상단 영역 -->
         <div class="modal-top">
-          <div class="modal-left" id="category-list">
-            <!-- 대분류 리스트 -->
-            <ul>
-              <li class="selectCategory" id="fruit">todo</li>
-              <li class="selectCategory" id="vegetable">users</li>
-            </ul>
+          <div class="modal-left-wrapper">
+            <h3 class="section-title">태그이름</h3>
+            <div class="modal-left" id="category-list">
+              <ul>
+                <li class="selectCategory" id="fruit">todo</li>
+                <li class="selectCategory" id="vegetable">users</li>
+              </ul>
+            </div>
           </div>
-          <div class="modal-right" id="subcategory-list">
-            <!-- 자식 분류 리스트 (선택된 대분류에 따라 변경됨) -->
-            <!-- 예: 과일 선택 시 사과, 바나나 등 -->
+
+          <!-- modal-right -->
+          <div class="modal-right-wrapper">
+            <h3 class="section-title">API 엔드포인트</h3>
+            <div class="modal-right" id="subcategory-list">
+              <!-- 동적 생성 영역 -->
+            </div>
           </div>
         </div>
-        <div class="modal-bottom" id="selected-subcategories">
-          <!-- 클릭된 자식 분류 항목들이 쌓이는 영역 -->
+
+        <div class="modal-bottom-wrapper">
+          <h3 class="section-title">선택된 항목</h3>
+          <div class="modal-bottom" id="selected-subcategories">
+          </div>
         </div>
-        <button id="closed-modal">닫기</button>
-        <button id="save-modal">확인인</button>
+
+        <!-- 버튼 영역 -->
+        <div class="modal-buttons">
+          <button id="closed-modal" class="cancel-btn">취소</button>
+          <button id="save-modal" class="confirm-btn">확인</button>
+        </div>
       </div>
+
     </div>
 
     <!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
