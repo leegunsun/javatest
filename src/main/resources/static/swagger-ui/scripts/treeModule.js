@@ -258,11 +258,19 @@ function selectCategory(category) {
 });
   const container = document.getElementById('subcategory-list');
   container.innerHTML = ''; // 초기화
+//container.style.whiteSpace = 'nowrap';
+////container.style.overflow = 'hidden';
+//container.style.textOverflow = 'ellipsis';
 
   list.forEach(name => {
     const item = document.createElement('div');
     item.textContent = name.subPath;
     item.style.cursor = 'pointer';
+
+    item.style.whiteSpace = 'nowrap';
+    item.style.overflow = 'hidden';
+    item.style.textOverflow = 'ellipsis';
+
     item.onclick = () => addToSelection(name);
     container.appendChild(item);
   });
