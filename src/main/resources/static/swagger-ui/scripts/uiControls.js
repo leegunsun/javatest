@@ -1,4 +1,5 @@
 import { convertSpec } from "./swaggerInit.js";
+import { selectCategory } from "./treeModule.js";
 
 /**
  * LocalStorage 초기화
@@ -106,6 +107,7 @@ document.getElementById("modal-overlay").addEventListener("click", (event) => {
 // [1] 설정 버튼 클릭 → 모달 열기
 document.getElementById("settings-btn").addEventListener("click", () => {
   console.log("[⚙️ settings-btn] 설정 버튼 클릭됨");
+  selectCategory();
   openModal();
 });
 

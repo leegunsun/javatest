@@ -228,83 +228,112 @@ export function renderSidebar(tree, container) {
   tree.forEach((node) => container.appendChild(createNode(node)));
 }
 
-const fruit = document.querySelector(".selectCategory#fruit");
-const vegetable = document.querySelector(".selectCategory#vegetable");
+export function selectCategory(selectedRootTagName) {
+  const tagContainer = document.querySelector(".modal-left#category-list");
+  tagContainer.innerHTML = "";
 
-fruit.addEventListener("click", () => {
-  selectCategory("todo");
-  fruit.classList.add('selectCategory-disabled'); // ✅ 비활성화 처리
-})
+  const subContainer = document.getElementById("subcategory-list");
+  subContainer.innerHTML = "";
 
-vegetable.addEventListener("click", () => {
-  selectCategory("users");
-  vegetable.classList.add('selectCategory-disabled'); // ✅ 비활성화 처리
-})
+  const uniqueRootTags = [...new Set(rawSpec.map(e => e.rootTagName))];
 
+  uniqueRootTags.forEach(rootTagName => {
+    const tagItem = document.createElement("div");
+    tagItem.textContent = rootTagName;
+    tagItem.dataset.rootTagName = rootTagName;
+    tagItem.classList.add("selectCategory");
 
-////
+    Object.assign(tagItem.style, {
+      cursor: "pointer",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
+      textOverflow: "ellipsis"
+    });
 
-function selectCategory(category) {
-  const list = rawSpec.filter((e, index) => {
-  console.log(`🔍 [${index}] rootPath:`, e.rootPath, "| category:", category);
+    tagItem.onclick = () => {
+      selectSingleCategory(rootTagName);
+      const subItems = rawSpec.filter(e => e.rootTagName === rootTagName);
+      subContainer.innerHTML = "";
 
-  const isMatch = e.rootPath == category;
+      subItems.forEach(item => {
+        const subItem = document.createElement("div");
+        subItem.textContent = item.subPath;
+        subItem.classList.add("subcategory-item");
+        subItem.style.cursor = "pointer";
+        subItem.style.whiteSpace = 'nowrap';
+        subItem.style.overflow = 'hidden';
+        subItem.style.textOverflow = 'ellipsis';
 
-  if (isMatch) {
-    console.log(`✅ [${index}] 매칭됨 → 포함됨`);
-  } else {
-    console.log(`❌ [${index}] 매칭되지 않음 → 제외됨`);
-  }
+        // ✅ 선택된 항목이면 UI만 비활성화
+        if (disabledSubcategories.has(item.subTagName)) {
+          subItem.classList.add("subcategory-disabled");
+        } else {
+          subItem.onclick = () => addToSelection(item, subItem);
+        }
 
-  return isMatch;
-});
-  const container = document.getElementById('subcategory-list');
-  container.innerHTML = ''; // 초기화
-//container.style.whiteSpace = 'nowrap';
-////container.style.overflow = 'hidden';
-//container.style.textOverflow = 'ellipsis';
-
-  list.forEach(name => {
-
-  if (!name || (typeof name === 'string' && name.trim() === '')) {
-    return; // forEach에서 continue 대신 return 사용
-  }
-
-    const item = document.createElement('div');
-    item.textContent = name.subPath;
-
-    item.classList.add('subcategory-item');
-
-
-    item.style.cursor = 'pointer';
-
-    item.style.whiteSpace = 'nowrap';
-    item.style.overflow = 'hidden';
-    item.style.textOverflow = 'ellipsis';
-
-    item.onclick = () => {
-      addToSelection(name);
-      item.classList.add('subcategory-disabled'); // ✅ 비활성화 처리
+        subContainer.appendChild(subItem);
+      });
     };
-    container.appendChild(item);
+
+    tagContainer.appendChild(tagItem);
   });
+
+  // 자동 초기 선택
+  if (selectedRootTagName) {
+    const first = [...tagContainer.children].find(el => el.dataset.rootTagName === selectedRootTagName);
+    if (first) first.click();
+  }
 }
 
-function addToSelection(item) {
-  const container = document.getElementById('selected-subcategories');
 
-  // 중복 검사: ID가 이미 존재하면 추가하지 않음
+/**
+ * 선택된 루트 카테고리 외 나머지를 비활성화 해제
+ * @param {string} id - 선택된 rootTagName
+ */
+function selectSingleCategory(id) {
+  const allCategories = document.querySelectorAll('.modal-left#category-list > div');
+
+  allCategories.forEach(el => {
+    if (el.dataset.rootTagName === id) {
+      el.classList.add('selectCategory-disabled');
+    } else {
+      el.classList.remove('selectCategory-disabled');
+    }
+  });
+}
+const disabledSubcategories = new Set();
+
+/**
+ * 서브카테고리를 선택 영역에 추가
+ * @param {object} item - 선택된 아이템
+ * @param {HTMLElement} domElement - 클릭된 DOM 요소
+ */
+function addToSelection(item, domElement = null) {
+  // 중복 방지
   if (document.getElementById(item.subTagName)) {
     console.warn(`⚠️ 이미 존재하는 항목입니다: ${item.subTagName}`);
     return;
   }
 
+  const container = document.getElementById('selected-subcategories');
+
+  // convertSpec에 추가
   convertSpec.push(item);
 
+  // DOM 추가
   const newItem = document.createElement('div');
   newItem.textContent = item.subPath;
-  newItem.style.marginBottom = '4px';
   newItem.id = item.subTagName;
+  newItem.classList.add('selected-subcategory-item');
+  newItem.style.marginBottom = '4px';
 
   container.appendChild(newItem);
+
+  // 선택 후 비활성화 상태로 기록
+  disabledSubcategories.add(item.subTagName);
+
+  // 해당 요소가 전달되었으면 UI 상태 업데이트
+  if (domElement) {
+    domElement.classList.add('subcategory-disabled');
+  }
 }
