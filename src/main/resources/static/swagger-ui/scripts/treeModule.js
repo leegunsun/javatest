@@ -233,10 +233,12 @@ const vegetable = document.querySelector(".selectCategory#vegetable");
 
 fruit.addEventListener("click", () => {
   selectCategory("todo");
+  fruit.classList.add('selectCategory-disabled'); // ✅ 비활성화 처리
 })
 
 vegetable.addEventListener("click", () => {
   selectCategory("users");
+  vegetable.classList.add('selectCategory-disabled'); // ✅ 비활성화 처리
 })
 
 
@@ -263,15 +265,27 @@ function selectCategory(category) {
 //container.style.textOverflow = 'ellipsis';
 
   list.forEach(name => {
+
+  if (!name || (typeof name === 'string' && name.trim() === '')) {
+    return; // forEach에서 continue 대신 return 사용
+  }
+
     const item = document.createElement('div');
     item.textContent = name.subPath;
+
+    item.classList.add('subcategory-item');
+
+
     item.style.cursor = 'pointer';
 
     item.style.whiteSpace = 'nowrap';
     item.style.overflow = 'hidden';
     item.style.textOverflow = 'ellipsis';
 
-    item.onclick = () => addToSelection(name);
+    item.onclick = () => {
+      addToSelection(name);
+      item.classList.add('subcategory-disabled'); // ✅ 비활성화 처리
+    };
     container.appendChild(item);
   });
 }

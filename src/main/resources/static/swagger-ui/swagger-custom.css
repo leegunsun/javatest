@@ -427,7 +427,45 @@
 }
 
 .selectCategory {
-  cursor: pointer; /* 손가락 모양 */
+  background-color: #f0f0f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.selectCategory:hover {
+  background-color: #e0e0e0;
+}
+
+.selectCategory-disabled {
+  background-color: #ffffff;
+  color: #007AFF !important;
+  border: solid #007AFF !important;
+  font-weight: bold;
+}
+
+#subcategory-list > div {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  border: 1px solid #ddd;
+}
+
+#subcategory-list > div:hover {
+  background-color: #f9f9f9;
+}
+
+.subcategory-disabled {
+  background-color: #e0e0e0 !important;
+  color: #999 !important;
+  cursor: not-allowed !important;
+  pointer-events: none; /* 클릭 방지 */
+  opacity: 0.6;
 }
 
 .modal-left-wrapper,
@@ -437,6 +475,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+   min-height: 0;
 }
 
 .modal-left,
