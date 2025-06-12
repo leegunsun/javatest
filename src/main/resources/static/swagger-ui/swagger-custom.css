@@ -499,3 +499,64 @@
 .modal-bottom {
   background-color: #fafafa;
 }
+
+#selected-subcategories {
+  background-color: #ffffff;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  max-height: 260px;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+/* 그룹 컨테이너 */
+.custom_side_bar-root-group {
+  background-color: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+.custom_side_bar-root-group-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+
+/* 선택된 항목 */
+.custom_side_bar-subcategory {
+  background-color: #e6f0ff;
+  border: 1px solid #cce0ff;
+  border-radius: 6px;
+  padding: 6px 12px;
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #0b3d91;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 선택된 항목 hover 효과 */
+.custom_side_bar-subcategory:hover {
+  background-color: #d6e9ff;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
+}
+
+/* 삭제 버튼 스타일 */
+.custom_sub-delete-button {
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 10px;
+  color: #007AFF;
+  transition: color 0.2s ease;
+}
+
+.custom_sub-delete-button:hover {
+  color: #0056b3;
+}

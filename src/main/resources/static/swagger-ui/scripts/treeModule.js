@@ -303,37 +303,76 @@ function selectSingleCategory(id) {
 }
 const disabledSubcategories = new Set();
 
-/**
- * 서브카테고리를 선택 영역에 추가
- * @param {object} item - 선택된 아이템
- * @param {HTMLElement} domElement - 클릭된 DOM 요소
- */
 function addToSelection(item, domElement = null) {
-  // 중복 방지
+  const container = document.getElementById("selected-subcategories");
+
+  // 이미 추가된 항목인지 확인
   if (document.getElementById(item.subTagName)) {
     console.warn(`⚠️ 이미 존재하는 항목입니다: ${item.subTagName}`);
     return;
   }
 
-  const container = document.getElementById('selected-subcategories');
+  // 그룹이 존재하는지 확인
+  let rootGroup = document.getElementById(item.rootTagName);
+  if (!rootGroup) {
+    rootGroup = document.createElement("div");
+    rootGroup.id = item.rootTagName;
+    rootGroup.classList.add("custom_side_bar-root-group");
 
-  // convertSpec에 추가
-  convertSpec.push(item);
+    // 그룹 상단 타이틀 생성
+    const containerTop = document.createElement("div");
+    containerTop.classList.add("custom_side_bar-root-group-top");
 
-  // DOM 추가
-  const newItem = document.createElement('div');
-  newItem.textContent = item.subPath;
+    const title = document.createElement("h4");
+    title.textContent = `📁 ${item.rootTagName}`;
+    title.classList.add("custom_side_bar-root-group-title");
+
+    containerTop.appendChild(title);
+    rootGroup.appendChild(containerTop);
+    container.appendChild(rootGroup);
+  }
+
+  // 개별 항목 생성
+  const newItem = document.createElement("div");
+  newItem.classList.add("custom_side_bar-subcategory");
   newItem.id = item.subTagName;
-  newItem.classList.add('selected-subcategory-item');
-  newItem.style.marginBottom = '4px';
 
-  container.appendChild(newItem);
+  const subText = document.createElement("span");
+  subText.textContent = item.subPath;
 
-  // 선택 후 비활성화 상태로 기록
+  const subDelBtn = document.createElement("span");
+  subDelBtn.classList.add("material-symbols-outlined", "custom_sub-delete-button");
+  subDelBtn.textContent = "close";
+
+  // 삭제 로직
+  subDelBtn.addEventListener("click", () => {
+    rootGroup.removeChild(newItem);
+
+    const index = convertSpec.findIndex(el => el.subTagName === item.subTagName);
+    if (index !== -1) convertSpec.splice(index, 1);
+
+    if (rootGroup.querySelectorAll(".custom_side_bar-subcategory").length === 0) {
+      container.removeChild(rootGroup);
+    }
+
+    disabledSubcategories.delete(item.subTagName);
+    if (domElement) {
+      domElement.classList.remove("subcategory-disabled");
+    }
+  });
+
+  newItem.appendChild(subText);
+  newItem.appendChild(subDelBtn);
+  rootGroup.appendChild(newItem);
+
+  convertSpec.push(item);
   disabledSubcategories.add(item.subTagName);
 
-  // 해당 요소가 전달되었으면 UI 상태 업데이트
   if (domElement) {
-    domElement.classList.add('subcategory-disabled');
+    domElement.classList.add("subcategory-disabled");
   }
+
+  container.scrollTop = container.scrollHeight;
 }
+
+
