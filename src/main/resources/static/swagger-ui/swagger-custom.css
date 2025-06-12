@@ -60,7 +60,7 @@
 }
 
 .opblock.status-작업안함 {
-  background-color: #f0f0f0 !important;
+  background-color: #eeeeee !important;
   border-left: 8px solid #6c757d !important;
 }
 .opblock-summary-description .badge-작업안함 {
@@ -348,7 +348,7 @@
 
 #sortable-list li {
   padding: 10px;
-  background-color: #f0f0f0;
+  background-color: #eeeeee;
   margin-bottom: 5px;
   cursor: grab;
   border-radius: 5px;
@@ -393,7 +393,7 @@
   border: 2px solid #000;
 }
 .cancel-btn:hover {
-  background-color: #f0f0f0;
+  background-color: #eeeeee;
 }
 
 /* ✅ 모달 최상단 타이틀 */
@@ -427,7 +427,7 @@
 }
 
 .selectCategory {
-  background-color: #f0f0f0;
+  background-color: #eeeeee;
   border-radius: 8px;
   padding: 8px 12px;
   margin-bottom: 6px;
@@ -436,13 +436,13 @@
 }
 
 .selectCategory:hover {
-  background-color: #e0e0e0;
+  background-color: #d6d6d6;
 }
 
 .selectCategory-disabled {
   background-color: #ffffff;
-  color: #007AFF !important;
-  border: solid #007AFF !important;
+  color: #000000 !important;
+  border: solid #000000 !important;
   font-weight: bold;
 }
 
@@ -453,7 +453,7 @@
   margin-bottom: 6px;
   cursor: pointer;
   transition: background-color 0.2s ease, color 0.2s ease;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
 }
 
 #subcategory-list > div:hover {
@@ -461,8 +461,8 @@
 }
 
 .subcategory-disabled {
-  background-color: #e0e0e0 !important;
-  color: #999 !important;
+  background-color: #eeeeee !important;
+  color: #bbb !important;
   cursor: not-allowed !important;
   pointer-events: none; /* 클릭 방지 */
   opacity: 0.6;
@@ -489,19 +489,19 @@
 
 /* 배경색 구분 유지 */
 .modal-left {
-  background-color: #f5f5f5;
+  background-color: #f8f8f8;
 }
 
 .modal-right {
-  background-color: #f5f5f5;
+  background-color: #f8f8f8;
 }
 
 .modal-bottom {
-  background-color: #fafafa;
+  background-color: #ffffff;
 }
 
 #selected-subcategories {
-  background-color: #ffffff;
+  background-color: #f9f9f9;
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #ddd;
@@ -512,8 +512,8 @@
 
 /* 그룹 컨테이너 */
 .custom_side_bar-root-group {
-  background-color: #fafafa;
-  border: 1px solid #e0e0e0;
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 12px;
@@ -525,35 +525,39 @@
   color: #333;
   margin-bottom: 6px;
 }
-
-/* 선택된 항목 */
 .custom_side_bar-subcategory {
-  background-color: #e6f0ff;
-  border: 1px solid #cce0ff;
+  background-color: #f6f6f6; /* 은은한 중립 회색 */
+  border-left: 4px solid #333333; /* 블랙 톤 강조선 */
   border-radius: 6px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   margin-top: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #0b3d91;
+  color: #111111;
   font-weight: 500;
   font-size: 14px;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, border-left 0.3s ease, box-shadow 0.2s ease;
 }
 
-/* 선택된 항목 hover 효과 */
 .custom_side_bar-subcategory:hover {
-  background-color: #d6e9ff;
-  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.2);
+  background-color: #eaeaea;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
-/* 삭제 버튼 스타일 */
+
+/* hover 시 강조 */
+.custom_side_bar-subcategory:hover {
+  background-color: #e2eeff;
+  box-shadow: 0 2px 6px rgba(0, 122, 255, 0.15);
+}
+
+/* 삭제 버튼 색 조정 */
 .custom_sub-delete-button {
   cursor: pointer;
   font-size: 16px;
   margin-left: 10px;
-  color: #007AFF;
+  color: #222;
   transition: color 0.2s ease;
 }
 
