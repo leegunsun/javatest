@@ -23,7 +23,7 @@ public class UserController {
         return ApiResponse.success(userService.getAllUsers());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id}userServiceuserServiceuserServiceuserServiceuserService")
     public ApiResponse<TestDTO> getUserById(@PathVariable String id) {
         return userService.getUserById(id)
                 .map(ele -> ApiResponse.success(new TestDTO("example", 100)))  // ✅ 수정됨
