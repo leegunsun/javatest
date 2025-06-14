@@ -10,3 +10,8 @@ export async function fetchAll() {
     groupedList: await groupRes.json()
   };
 }
+
+export function loadTreeFromStorage() {
+  const raw = localStorage.getItem("apiTreeStructure");
+  return raw ? JSON.parse(raw) : null;
+}

@@ -8,10 +8,10 @@
       rel="stylesheet"
       href="https://unpkg.com/swagger-ui-dist/swagger-ui.css"
     />
-    <link rel="stylesheet" href="/swagger-ui/swagger-custom-badge.css" />
-    <link rel="stylesheet" href="/swagger-ui/swagger-custom-modal.css" />
-    <link rel="stylesheet" href="/swagger-ui/swagger-custom-sidebar.css" />
     <link rel="stylesheet" href="/swagger-ui/swagger-custom.css" />
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
+    <link rel="stylesheet" href="/swagger-ui/swagger-custom.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 
     <script type="module" src="/swagger-ui/scripts/main.js"></script>
     <style>
@@ -69,71 +69,85 @@
     </style>
   </head>
   <body>
-    <!-- ① 도구 버튼 전용 컨테이너: 절대 배치, z-index로 버튼만 위에 띄우기 -->
-    <div class="swagger-tool-container">
-      <div
-        id="new-api-counter"
-        class="swagger-tool-btn"
-        style="background-color: #6f42c1; cursor: default"
-      >
-        NEW API: 0개
-      </div>
-      <button id="refresh-page-btn" class="swagger-tool-btn">새로고침</button>
-      <button id="reset-localstorage-btn" class="swagger-tool-btn">
-        🗑️ LocalStorage 초기화
-      </button>
-      <button id="reset-cookie-btn" class="swagger-tool-btn">
-        🍪 쿠키 초기화
-      </button>
-    </div>
 
-    <!-- 모달을 감싸는 전체 배경 -->
-    <div id="modal-overlay" class="hidden">
-      <div id="modal">
-        <div class="modal-top">
-          <div class="modal-left" id="category-list">
-            <!-- 대분류 리스트 -->
-            <ul>
-              <li class="selectCategory" id="fruit">todo</li>
-              <li class="selectCategory" id="vegetable">users</li>
-            </ul>
+  <!-- ① 도구 버튼 전용 컨테이너: 절대 배치, z-index로 버튼만 위에 띄우기 -->
+  <div class="swagger-tool-container">
+    <div id="new-api-counter"
+         class="swagger-tool-btn"
+         style="background-color: #6F42C1; cursor: default;">
+      NEW API: 0개
+    </div>
+    <button id="refresh-page-btn" class="swagger-tool-btn">새로고침</button>
+    <button id="reset-localstorage-btn" class="swagger-tool-btn">🗑️ LocalStorage 초기화</button>
+    <button id="reset-cookie-btn" class="swagger-tool-btn">🍪 쿠키 초기화</button>
+  </div>
+
+  <!-- 모달을 감싸는 전체 배경 -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal">
+      <!-- ✅ 최상단 모달 타이틀 -->
+      <h2 class="modal-title">API 북마크</h2>
+
+      <!-- 상단 영역 -->
+      <div class="modal-top">
+        <div class="modal-left-wrapper">
+          <h3 class="section-title">태그이름</h3>
+          <div class="modal-left" id="category-list" flex-direction="column">
+            <!-- 동적 생성 영역 -->
           </div>
+        </div>
+
+        <!-- modal-right -->
+        <div class="modal-right-wrapper">
+          <h3 class="section-title">API 엔드포인트</h3>
           <div class="modal-right" id="subcategory-list">
-            <!-- 자식 분류 리스트 (선택된 대분류에 따라 변경됨) -->
-            <!-- 예: 과일 선택 시 사과, 바나나 등 -->
+            <!-- 동적 생성 영역 -->
           </div>
         </div>
+      </div>
+
+      <div class="modal-bottom-wrapper">
+        <h3 class="section-title">선택된 항목</h3>
         <div class="modal-bottom" id="selected-subcategories">
-          <!-- 클릭된 자식 분류 항목들이 쌓이는 영역 -->
+          <!-- 동적 생성 영역 -->
         </div>
-        <button id="closed-modal">닫기</button>
-        <button id="save-modal">확인인</button>
+      </div>
+
+      <!-- 버튼 영역 -->
+      <div class="modal-buttons">
+        <button id="closed-modal" class="cancel-btn">취소</button>
+        <button id="save-modal" class="confirm-btn">확인</button>
       </div>
     </div>
 
-    <!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
-    <div class="main-container" style="flex-direction: row">
-      <nav class="sidebar">
-        <div
-          class="empty"
-          id="empyt-box"
-          style="padding-left: 20px; flex-direction: row"
-        >
-          <div class="sidebar-content">
-            <button id="settings-btn">⚙️</button>
-            <h3>커스텀 API 그룹</h3>
-            <ul id="custom-api-tree">
-              <li id="custom-api-tree-main-test">테스트 메인</li>
-            </ul>
-            <h3>API 그룹</h3>
-            <ul id="api-tree"></ul>
+  </div>
+  <!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
+  <div class="main-container" style="flex-direction: row">
+    <nav class="sidebar">
+      <div
+              class="empty"
+              id="empyt-box"
+              style="padding-left: 20px; flex-direction: row"
+      >
+        <div class="sidebar-content">
+          <div class="sidebat-title">
+            <h3 class="custom-api-title">북마크&nbsp;&nbsp;</h3>
+            <span id="settings-btn" class="material-symbols-outlined" >settings</span>
           </div>
+          <ul id="custom-api-tree">
+            <li id="custom-api-tree-main-test">API 북마크</li>
+          </ul>
+          <h3>API 그룹</h3>
+          <ul id="api-tree"></ul>
         </div>
-      </nav>
-      <button id="toggle-sidebar-btn">☰</button>
-      <section id="swagger-ui"></section>
-    </div>
+      </div>
+    </nav>
+    <button id="toggle-sidebar-btn">☰</button>
+    <section id="swagger-ui"></section>
+  </div>
 
-    <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+
+  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+
   </body>
 </html>

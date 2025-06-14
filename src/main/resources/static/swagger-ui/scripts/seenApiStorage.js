@@ -1,9 +1,9 @@
-export function getSeenApis() {
+function getSeenApis() {
   const raw = localStorage.getItem("seenApis");
   return raw ? JSON.parse(raw) : {};
 }
 
-export function markApiAsSeen(key, type = "status") {
+export function setMarkAtSeenApi(key, type = "status") {
   const seen = getSeenApis();
   seen[key] = { type, timestamp: new Date().toISOString() };
   localStorage.setItem("seenApis", JSON.stringify(seen));
@@ -19,7 +19,7 @@ export function isApiSeenRecently(key, thresholdDays = 5) {
   const diffDays = (now - saved) / (1000 * 60 * 60 * 24);
 
   if (diffDays >= thresholdDays) {
-    markApiAsSeen(key, seen.type);
+    setMarkAtSeenApi(key, seen.type);
     return true;
   }
   return true;

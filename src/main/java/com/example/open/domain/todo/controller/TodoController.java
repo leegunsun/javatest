@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/todo")
+@RequestMapping("/todo/todo")
 @RequiredArgsConstructor
 @Tag(
         name = "todos",
@@ -116,5 +116,15 @@ public class TodoController {
     @DeleteMapping("/{id}")
     public void deleteTodoById(@PathVariable Long id) {
         todoService.deleteTodoById(id);
+    }
+
+    @Operation(
+            summary = ApiWorkStateLabel.WORKING + "회원 가입 API23",
+            description = "2025-04-20 신규 추가된 API입니다.23"
+    )
+    @GetMapping("/set40")
+    public String setSession40(HttpSession session, @RequestParam String value) {
+        session.setAttribute("key", value);
+        return "세션 저장됨: " + value;
     }
 }

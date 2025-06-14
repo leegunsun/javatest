@@ -7,6 +7,129 @@
   font-style: italic;
 }
 
+.opblock-summary-description span[class^="badge-"] {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 6px;
+  color: white;
+}
+
+.opblock.status-작업중 {
+  background-color: #fff8e1 !important;
+  border-left: 8px solid #ffc107 !important;
+}
+.opblock-summary-description .badge-작업중 {
+  background-color: #ffc107;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-작업완료 {
+  background-color: #e6f4ea !important;
+  border-left: 8px solid #28a745 !important;
+}
+.opblock-summary-description .badge-작업완료 {
+  background-color: #28a745;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-업데이트 {
+  background-color: #e8f0fe !important; /* 연한 파랑 */
+  border-left: 8px solid #0d6efd !important; /* 진한 파랑 */
+}
+.opblock-summary-description .badge-업데이트 {
+  background-color: #0d6efd;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-작업안함 {
+  background-color: #f0f0f0 !important;
+  border-left: 8px solid #6c757d !important;
+}
+.opblock-summary-description .badge-작업안함 {
+  background-color: #6c757d;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트중 {
+  background-color: #e0f0ff !important;
+  border-left: 8px solid #007bff !important;
+}
+.opblock-summary-description .badge-테스트중 {
+  background-color: #007bff;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트완료 {
+  background-color: #e8f5e9 !important;
+  border-left: 8px solid #198754 !important;
+}
+.opblock-summary-description .badge-테스트완료 {
+  background-color: #198754;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트실패 {
+  background-color: #fdecea !important;
+  border-left: 8px solid #dc3545 !important;
+}
+.opblock-summary-description .badge-테스트실패 {
+  background-color: #dc3545;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.opblock.status-테스트성공 {
+  background-color: #e0f7f4 !important;
+  border-left: 8px solid #20c997 !important;
+}
+.opblock-summary-description .badge-테스트성공 {
+  background-color: #20c997;
+  color: white;
+  padding: 2px 6px;
+  margin-left: 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+
 /* Swagger UI에 사이드바 너비만큼 마진 */
 #swagger-ui {
   flex: 1;
@@ -21,4 +144,439 @@
   top: 10px; /* 상단에서 10px 아래 */
   right: 10px; /* 우측에서 10px 왼쪽 */
   z-index: 9999; /* 다른 요소 위에 띄우기 */
+}
+
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+
+  opacity: 1;
+  transition: opacity 0.2s ease;
+  pointer-events: auto;
+}
+
+#modal-overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+
+/* ✅ 루트 그룹을 감싸는 박스 */
+.custom_side_bar-root-group {
+  background-color: #ffffff;
+  border: 1px solid #cccccc;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 12px;
+}
+
+
+.custom_side_bar-root-group-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ✅ 그룹 제목 (예: 📁 rootTagName) */
+.custom_side_bar-root-group-title {
+  margin-bottom: 8px;
+}
+
+.custom_group-delete-button {
+  cursor: pointer;
+  color: red;
+  font-size: 20px;
+}
+
+/* 삭제 아이콘은 오른쪽 */
+.custom_sub-delete-button {
+  cursor: pointer;
+  font-size: 16px;
+  margin-left: 10px;
+  color: #222;
+  transition: color 0.2s ease;
+}
+
+.custom_sub-delete-button:hover {
+  color: red;
+}
+
+/* ✅ subPath 항목 */
+.custom_side_bar-subcategory {
+  background-color: #f6f6f6; /* 은은한 중립 회색 */
+  border-left: 4px solid #333333; /* 블랙 톤 강조선 */
+  border-radius: 6px;
+  padding: 8px 14px;
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #111111;
+  font-weight: 500;
+  font-size: 14px;
+  transition: background-color 0.2s ease, border-left 0.3s ease, box-shadow 0.2s ease;
+}
+/* hover 시 강조 */
+.custom_side_bar-subcategory:hover {
+  background-color: #f9f9f9;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+
+
+/* 텍스트는 왼쪽 */
+.custom_side_bar-subcategory > span:first-child {
+  flex: 1; /* 남는 공간을 차지 */
+  text-align: left;
+  /* white-space: nowrap; */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.main-container {
+  display: flex;
+  height: 100vh;
+  margin: 0; /* body 기본 여백 제거 */
+  padding: 0;
+}
+
+/* 사이드바 내부 텍스트들에 부드러운 페이드 처리 */
+.sidebar-content {
+  transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#swagger-ui.sidebar-collapsed {
+  margin-left: 10px !important;
+  transition: margin-left 0.3s ease;
+}
+
+#toggle-sidebar-btn {
+  height: 100px;
+  position: sticky;
+  background-color: #343a40;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 0 6px 6px 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+#toggle-sidebar-btn:hover {
+  background-color: #495057;
+  transform: scale(1.05);
+  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar {
+  width: 220px;
+  background: #f8f9fa;
+  border-right: 1px solid #ddd;
+  overflow: hidden;
+  padding: 5px;
+  font-size: 14px;
+  white-space: nowrap;
+
+  /* 핵심: 부드럽게 닫기/열기 위해 width와 padding에 transition 추가 */
+  transition: width 0.3s ease, padding 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 10px;
+  border: none;
+  overflow: hidden;
+  padding: 5px;
+  transition: width 0.3s ease, padding 0.3s ease;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding-left: 0;
+}
+.sidebar li {
+  margin: 4px 0;
+  cursor: pointer;
+}
+.sidebar li > span {
+  display: inline-flex;
+  align-items: center;
+}
+.sidebar li.active > span {
+  font-weight: bold;
+  color: #007bff;
+}
+.sidebar li .children {
+  margin-left: 16px;
+  display: none;
+}
+.sidebar li.open .children {
+  display: block;
+}
+
+.node-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.node-drag-handler {
+  cursor: grab;
+  user-select: none;
+  color: #666;
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.node-drag-handler:hover {
+  transform: scale(1.1);
+  color: #000;
+}
+
+.node-title {
+  flex-grow: 1;
+}
+
+.sidebar li.dragging {
+  opacity: 0.5;
+  transform: scale(1.02);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  z-index: 999;
+}
+
+.sidebar li.drag-over {
+  background-color: #e3f2fd;
+  border: 2px dashed #1976d2;
+  transition: background-color 0.2s ease, border 0.2s ease;
+}
+
+.sidebar li {
+  transition: all 0.25s ease;
+}
+
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.modal-buttons button {
+  padding: 10px 20px;
+  border-radius: 999px; /* 둥근 버튼 */
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* 확인 버튼: 검정 배경, 흰 글씨 */
+.confirm-btn {
+  background-color: #000;
+  color: #fff;
+  border: none;
+}
+.confirm-btn:hover {
+  background-color: #222;
+}
+
+/* 취소 버튼: 흰 배경, 검정 글씨 + 테두리 */
+.cancel-btn {
+  background-color: #fff;
+  color: #000;
+  border: 2px solid #000;
+}
+.cancel-btn:hover {
+  background-color: #eeeeee;
+}
+
+/* ✅ 모달 최상단 타이틀 */
+.modal-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  text-align: center;
+  color: #333;
+}
+
+/* ✅ 섹션 타이틀 (modal-left, modal-right, modal-bottom 내부) */
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #444;
+  /* white-space: nowrap; */
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ✅ 긴 텍스트 항목 대응 */
+.modal-left li,
+.modal-right div,
+.modal-bottom div {
+  word-break: break-word;
+  white-space: normal;
+  line-height: 1.5;
+  cursor: pointer; /* 오른쪽 항목도 클릭 가능 시 손가락 */
+}
+
+.selectCategory {
+  background-color: #eeeeee;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.selectCategory:hover {
+  background-color: #d6d6d6;
+}
+#subcategory-list > div {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  border: 1px solid #ccc;
+}
+#subcategory-list > div:hover {
+  background-color: #f9f9f9;
+}
+.subcategory-disabled {
+  background-color: #eeeeee !important;
+  color: #bbb !important;
+  cursor: not-allowed !important;
+  pointer-events: auto;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.selectCategory-disabled {
+  background-color: #ffffff;
+  color: #000000 !important;
+  border: solid #000000 !important;
+}
+
+
+#modal {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  padding: 20px 30px;
+  border-radius: 10px;
+  width: 60%;
+  height: 100%;
+  max-height: 90vh; /* 최대 높이 제한을 주고 싶다면 */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.modal-top {
+  flex: 3; /* 전체 기준 7:3 비율 */
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+
+.modal-bottom-wrapper {
+  flex: 1;           /* 💡 핵심: 남은 모든 공간 차지 */
+  min-height: 0;     /* 💡 flex 내부의 스크롤 보장을 위해 필요 */
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-left-wrapper,
+.modal-right-wrapper {
+  width : 50%;
+  display: flex;
+  flex-direction: column;
+  flex: 4;
+}
+
+/* modal-left / right / bottom 내부 스크롤 영역 */
+.modal-left,
+.modal-right {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.modal-bottom {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+/* 배경 구분 */
+.modal-left {
+  background-color: #f8f8f8;
+}
+
+.modal-right {
+  background-color: #f8f8f8;
+}
+
+.modal-bottom {
+  background-color: #ffffff;
+}
+
+#selected-subcategories {
+  background-color: #f9f9f9;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  max-height: 260px;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+}
+
+.sidebat-title {
+  display: flex;
+  /* justify-content: space-between; */
+  align-items: center;
+  padding-top: 30px;
+}
+
+.custom-api-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+}
+
+#settings-btn.material-symbols-outlined {
+  font-size: 24px;
+  cursor: pointer;
+  color: #343a40;
+}
+#settings-btn.material-symbols-outlined:hover {
+  color: #000;
+}
+
+#custom-api-tree {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.material-symbols-outlined.bookmark-toggle {
+  transition: color 0.3s;
+}
+
+.material-symbols-outlined.bookmark-toggle:hover {
+  color: darkorange;
 }
