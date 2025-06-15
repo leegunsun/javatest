@@ -4,18 +4,19 @@ import { addToSelection } from "./selectionHandler.js";
 export function renderSubcategoryItems(subItems, subContainer) {
   subContainer.innerHTML = "";
 
-  subItems.forEach(item => {
-    const subItem = document.createElement("div");
-    subItem.textContent = item.subPath;
-    subItem.classList.add("subcategory-item");
-    subItem.style.cursor = "pointer";
+    Object.entries(subItems).forEach(([index, item]) => {
+      const subItem = document.createElement("div");
+      subItem.textContent = item.path;
+      subItem.classList.add("subcategory-item");
+      subItem.style.cursor = "pointer";
 
-    if (getDisabledSubcategories().has(item.subTagName)) {
-      subItem.classList.add("subcategory-disabled");
-    } else {
-      subItem.onclick = () => addToSelection(item, subItem);
-    }
+      // if (getDisabledSubcategories().has(item.tags?.[0])) {
+      if (getDisabledSubcategories().has(item)) {
+        subItem.classList.add("subcategory-disabled");
+      } else {
+        subItem.onclick = () => addToSelection(item, subItem);
+      }
 
-    subContainer.appendChild(subItem);
-  });
+      subContainer.appendChild(subItem);
+    });
 }

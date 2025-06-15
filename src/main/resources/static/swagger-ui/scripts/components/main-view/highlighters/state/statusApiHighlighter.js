@@ -11,7 +11,7 @@ export function highlightApiStatusFromDescription() {
   const spec = window.ui.specSelectors.specJson().toJS();
   const paths = spec.paths;
 
-  const opblocks = findAllOpblocks();
+  const opblocks = document.querySelectorAll(".opblock");
   opblocks.forEach((opblock) => {
     const elSummary = opblock.querySelector(".opblock-summary");
     const elPath = elSummary?.querySelector(".opblock-summary-path");

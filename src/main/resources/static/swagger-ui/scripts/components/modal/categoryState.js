@@ -1,18 +1,18 @@
 var disabledSubcategories = new Set();
-var convertSpec = [];
+// var convertSpec = [];
 
 
-export function getConvertSpec() {
-  return convertSpec;
-}
+// export function getConvertSpec() {
+//   return convertSpec;
+// }
 
-export function pushConvertSpec(setData) {
-  return convertSpec.push(setData);
-}
+// export function pushConvertSpec(setData) {
+//   return convertSpec.push(setData);
+// }
 
-export function setConvertSpec(setData) {
-  convertSpec = setData;
-}
+// export function setConvertSpec(setData) {
+//   convertSpec = setData;
+// }
 
 export function getDisabledSubcategories() {
   return disabledSubcategories;

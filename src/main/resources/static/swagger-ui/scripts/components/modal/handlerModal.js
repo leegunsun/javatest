@@ -1,7 +1,8 @@
 import { renderCategoryList } from "./renderCategoryList.js";
 import { loadFilteredSwaggerSpec } from "../../custominit/swaggerPostProcessors.js";
-import { getConvertSpec } from "./categoryState.js";
+import { getConvertSpec } from "../../custominit/state.js";
 import { loadSwagger } from "../../custominit/init.js";
+import { setLocalStorageUsedPath, getLocalStorageUsedPath } from "../../swaggerInitData.js";
 
 // [1] 설정 버튼 클릭 → 모달 열기
 document.getElementById("settings-btn").addEventListener("click", async () => {
@@ -35,7 +36,7 @@ document.getElementById("modal-overlay").addEventListener("click", (event) => {
  */
 function openModal() {
   console.log("[🔓 openModal] 모달 열기 시도");
-  renderCategoryList();
+  renderCategoryList(getLocalStorageUsedPath());
   document.getElementById("modal-overlay")?.classList.remove("hidden");
 }
 
@@ -51,7 +52,7 @@ document.getElementById("closed-modal").addEventListener("click", () => {
 });
 
 document.getElementById("save-modal").addEventListener("click", () => {
-  localStorage.setItem("usedPath", JSON.stringify(getConvertSpec()));
+  setLocalStorageUsedPath(JSON.stringify(getConvertSpec()));
   closeModal();
   loadSwagger();
 });

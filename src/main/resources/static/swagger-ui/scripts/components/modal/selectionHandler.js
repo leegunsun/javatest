@@ -1,38 +1,46 @@
-import { getConvertSpec, pushConvertSpec, deleteDisabledSubcategories, addDisabledSubcategories } from "./categoryState.js";
+import { deleteDisabledSubcategories, addDisabledSubcategories } from "./categoryState.js";
 import { getSelectedContainer } from "./selectors.js";
+import { pushConvertSpec, getConvertSpec } from "../../custominit/state.js";
 
 export function addToSelection(item, domElement = null) {
   const container = getSelectedContainer();
-  const existing = document.getElementById(item.subTagName);
+
+  const path = item.path;
+  const method = item.method;
+  const createElId = `${item.operationId + "." + path + "." + method}`
+  const rootTagName = item.tags?.[0];
+  
+
+  const existing = document.getElementById(createElId);
   const convertSpec = getConvertSpec();
 
   if (existing) {
-    const rootGroup = document.getElementById(item.rootTagName);
+    const rootGroup = document.getElementById(rootTagName);
     rootGroup.removeChild(existing);
 
-    const index = convertSpec.findIndex(el => el.subTagName === item.subTagName);
+    const index = convertSpec.findIndex(el => el === item); //
     if (index !== -1) convertSpec.splice(index, 1);
 
     if (rootGroup.querySelectorAll(".custom_side_bar-subcategory").length === 0) {
       container.removeChild(rootGroup);
     }
 
-    deleteDisabledSubcategories(item.subTagName);
+    deleteDisabledSubcategories(item);
     if (domElement) domElement.classList.remove("subcategory-disabled");
     return;
   }
 
-  let rootGroup = document.getElementById(item.rootTagName);
+  let rootGroup = document.getElementById(rootTagName);
   if (!rootGroup) {
     rootGroup = document.createElement("div");
-    rootGroup.id = item.rootTagName;
+    rootGroup.id = rootTagName;
     rootGroup.classList.add("custom_side_bar-root-group");
 
     const containerTop = document.createElement("div");
     containerTop.classList.add("custom_side_bar-root-group-top");
 
     const title = document.createElement("h4");
-    title.textContent = `📁 ${item.rootTagName}`;
+    title.textContent = `📁 ${rootTagName}`;
     title.classList.add("custom_side_bar-root-group-title");
 
     containerTop.appendChild(title);
@@ -42,10 +50,10 @@ export function addToSelection(item, domElement = null) {
 
   const newItem = document.createElement("div");
   newItem.classList.add("custom_side_bar-subcategory");
-  newItem.id = item.subTagName;
+  newItem.id = createElId;
 
   const subText = document.createElement("span");
-  subText.textContent = item.subPath;
+  subText.textContent = path;
 
   const subDelBtn = document.createElement("span");
   subDelBtn.classList.add("material-symbols-outlined", "custom_sub-delete-button");
@@ -54,14 +62,14 @@ export function addToSelection(item, domElement = null) {
   subDelBtn.addEventListener("click", () => {
     rootGroup.removeChild(newItem);
 
-    const index = convertSpec.findIndex(el => el.subTagName === item.subTagName);
+    const index = convertSpec.findIndex(el => el === item);
     if (index !== -1) convertSpec.splice(index, 1);
 
     if (rootGroup.querySelectorAll(".custom_side_bar-subcategory").length === 0) {
       container.removeChild(rootGroup);
     }
 
-    deleteDisabledSubcategories(item.subTagName);
+    deleteDisabledSubcategories(item);
     if (domElement) domElement.classList.remove("subcategory-disabled");
   });
 
@@ -70,7 +78,7 @@ export function addToSelection(item, domElement = null) {
   rootGroup.appendChild(newItem);
 
   pushConvertSpec(item);
-  addDisabledSubcategories(item.subTagName);
+  addDisabledSubcategories(item);
 
   if (domElement) domElement.classList.add("subcategory-disabled");
   container.scrollTop = container.scrollHeight;

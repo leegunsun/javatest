@@ -1,4 +1,4 @@
-import { resetNewApiHighlights } from "./newApiResetter.js";
+
 import { isApiRecentlyCreated } from "./dateChecker.js";
 import { findMatchingOpblocks } from "./opblockFinder.js";
 import { markNewApi } from "./newApiMarker.js";
@@ -7,7 +7,14 @@ import { isApiSeenRecently } from "../../../../seenApiStorage.js";
 
 export function highlightNewApisFromSpec() {
   console.log("🧹 highlightNewApisFromSpec - 기존 NEW 강조 초기화");
-  resetNewApiHighlights();
+    document.querySelectorAll(".opblock").forEach((opblock) => {
+    opblock.style.backgroundColor = "";
+    opblock.style.borderLeft = "";
+    opblock.style.boxShadow = "";
+
+    const badge = opblock.querySelector(".new-api-badge");
+    if (badge) badge.remove();
+  });
 
   const spec = window.ui.specSelectors.specJson().toJS();
   const now = new Date();

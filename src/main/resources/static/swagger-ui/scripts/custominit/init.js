@@ -1,9 +1,8 @@
-// import { highlightApiStatusFromDescription } from "../statusHighlighter.js";
 import { highlightApiStatusFromDescription } from "../components/main-view/highlighters/state/statusApiHighlighter.js"
 import { addApiPrefixToDescription } from "../components/main-view/descriptionRenderer.js";
 import { loadFilteredSwaggerSpec , initDropDownBtn } from "./swaggerPostProcessors.js";
 import { highlightNewApisFromSpec } from "../components/main-view/highlighters/newApi/newApiHighlighter.js"
-
+import { highlightAll } from "../components/main-view/highlighters/init/highlightAllEnhancers.js";
 /**
  *
  * - 그룹네임이 있다면 해당 그룹에 해당하는 스웨거 API를 호출해서 데이터를 불러옵니다.
@@ -33,8 +32,7 @@ function createSwaggerUI(spec) {
     onComplete: () => {
       setTimeout(() => {
         initDropDownBtn();
-        highlightApiStatusFromDescription();
-        highlightNewApisFromSpec();
+        highlightAll();
         addApiPrefixToDescription();
       }, 1000);
     },

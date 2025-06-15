@@ -1,8 +1,10 @@
-import { setRawSpec, pushRawSpec } from "./state.js";
+import { pushConvertSpec, setRawSpec, getRawSpec } from "./state.js";
+import { getLocalStorageUsedPath ,
+   getLocalStorageInitDropDownBtn,
+    setLocalStorageInitDropDownBtn } from "../swaggerInitData.js";
 
 function filterPathsByUsedPath(originalSpec, usedPathList) {
-  setRawSpec([]);
-
+  
   if (usedPathList == null) {
     return {
       ...originalSpec,
@@ -21,17 +23,17 @@ function filterPathsByUsedPath(originalSpec, usedPathList) {
       const normalizedMethod = method.toLowerCase();
       const usedPath = path.split("/");
 
-      pushRawSpec({
-        rootTagName: operation.tags?.[0],
-        subTagName: operation.operationId + usedPath[2],
-        method,
-        rootPath: usedPath[2],
-        subPath: usedPath[3],
-      });
+      // pushConvertSpec({
+      //   rootTagName: operation.tags?.[0],
+      //   subTagName: operation.operationId + usedPath[2],
+      //   method,
+      //   rootPath: usedPath[2],
+      //   subPath: usedPath[3],
+      // });
 
       const isMatch = usedPathList.some((entry) => {
         const targetMethod = entry.method.toLowerCase();
-        const composedPath = `/${entry.rootPath}/${entry.rootPath}/${entry.subPath}`.replace(
+        const composedPath = `${entry.path}`.replace(
           /\/+/g,
           "/"
         );
@@ -44,7 +46,7 @@ function filterPathsByUsedPath(originalSpec, usedPathList) {
         return (
           normalizedMethod === targetMethod &&
           path === composedPath &&
-          operation.tags?.includes(entry.rootTagName)
+          operation.tags?.includes(entry.tags?.[0])
         );
       });
 
@@ -73,10 +75,10 @@ export function initDropDownBtn() {
 
     // 리스너 등록 및 초기화
     selectElement2.addEventListener("change", () => {
-      localStorage.setItem("initDropDownBtn", selectElement2.value);
+      setLocalStorageInitDropDownBtn(selectElement2.value)
     });
 
-    const savedUrl = localStorage.getItem("initDropDownBtn");
+    const savedUrl = getLocalStorageInitDropDownBtn();
     console.log(savedUrl);
     if (savedUrl) {
       selectElement2.value = savedUrl;
@@ -84,7 +86,7 @@ export function initDropDownBtn() {
     }
   }
 
-  const getUrlState = localStorage.getItem("initDropDownBtn");
+  const getUrlState = getLocalStorageInitDropDownBtn();
 
   if (getUrlState == null) {
     console.warn("⚠️ 'initDropDownBtn'가 존재하지 않습니다.");
@@ -119,10 +121,10 @@ export async function loadFilteredSwaggerSpec() {
   const swaggerUrl = `/v3/api-docs/1`;
   const getData = await fetch(swaggerUrl).then((res) => res.json());
 
-  const usedPath = JSON.parse(localStorage.getItem("usedPath"));
+  const usedPath = JSON.parse(getLocalStorageUsedPath());
 
-  const clonedSpec = structuredClone(getData);
-  const filteredSpec = filterPathsByUsedPath(clonedSpec, usedPath);
+  setRawSpec(structuredClone(getData));
+  const filteredSpec = filterPathsByUsedPath(getRawSpec(), usedPath);
 
   return filteredSpec;
 }

@@ -15,3 +15,19 @@ export function loadTreeFromStorage() {
   const raw = localStorage.getItem("apiTreeStructure");
   return raw ? JSON.parse(raw) : null;
 }
+
+export function getLocalStorageUsedPath () {
+  return localStorage.getItem("usedPath");
+}
+
+export function setLocalStorageUsedPath (setData) {
+  return localStorage.setItem("usedPath", setData);
+}
+
+export function getLocalStorageInitDropDownBtn () {
+  return localStorage.getItem("initDropDownBtn");
+}
+
+export function setLocalStorageInitDropDownBtn (setData) {
+  return localStorage.setItem("initDropDownBtn", setData);
+}
