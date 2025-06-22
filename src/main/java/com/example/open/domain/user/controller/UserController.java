@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/users/users")
@@ -19,8 +20,18 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping
-    public ApiResponse<List<User>> getAllUsers() {
-        return ApiResponse.success(userService.getAllUsers());
+    public CompletableFuture<ApiResponse<String>> getAllUsers() throws InterruptedException {
+        System.out.println("getAllUsers 요청 스레드: " + Thread.currentThread().getName());
+        MyContext.context.set("요청 스레드의 값");
+        System.out.println("비동기 스레드의 context: " + MyContext.context.get());
+
+         // 비동기 호출
+        return userService.doAsync()
+                .thenApply(result -> {
+                    System.out.println("thenApply 응답 처리 스레드 이름: " + Thread.currentThread().getName());
+                    System.out.println("비동기 스레드의 context: " + MyContext.context.get());
+                    return ApiResponse.success(result);
+                });
     }
 
     @GetMapping("/{id}userServiceuserServiceuserServiceuserServiceuserService")
