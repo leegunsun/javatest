@@ -15,13 +15,21 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session
+                        .maximumSessions(1) // 최대 세션 수
+                        .maxSessionsPreventsLogin(false) // 중복 로그인 허용
+                )
                 .authorizeHttpRequests(auth -> auth
-                        // Swagger 접근 허용
+                        // 공개 접근 허용
                         .requestMatchers(
-                                "/v3/api-docs/**"
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/auth/login",
+                                "/auth/status"
                         ).permitAll()
+                        // 나머지는 인증 필요 (데모용으로 일시 비활성화)
                         .requestMatchers("/**").permitAll()
-                        // 나머지는 인증 필요
                         .anyRequest().authenticated()
                 );
 

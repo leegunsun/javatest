@@ -1,4 +1,21 @@
 {
+    "com.example.open.domain.auth.controller.AuthController": {
+        "tag": {
+            "name": "auth",
+            "description": "\uc778\uc99d \uad00\ub9ac API"
+        },
+        "methods": {
+            "login": {
+                "date": "unknown"
+            },
+            "logout": {
+                "date": "unknown"
+            },
+            "getAuthStatus": {
+                "date": "unknown"
+            }
+        }
+    },
     "com.example.open.domain.todo.controller.TodoController": {
         "tag": {
             "name": "todos",

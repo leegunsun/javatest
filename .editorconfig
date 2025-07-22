@@ -1,0 +1,16 @@
+# 최상위 설정 파일
+root = true
+
+# 모든 파일에 적용 기본 설정
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Java/Spring Boot 관련 파일 명시적 설정
+[*.{java,kt,groovy,xml,yml,properties}]
+indent_style = space
+indent_size = 4
