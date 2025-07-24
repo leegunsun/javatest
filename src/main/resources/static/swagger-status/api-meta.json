@@ -6,13 +6,13 @@
         },
         "methods": {
             "login": {
-                "date": "unknown"
+                "date": "2025-07-22"
             },
             "logout": {
-                "date": "unknown"
+                "date": "2025-07-22"
             },
             "getAuthStatus": {
-                "date": "unknown"
+                "date": "2025-07-22"
             }
         }
     },

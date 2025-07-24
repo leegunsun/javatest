@@ -580,3 +580,18 @@
 .material-symbols-outlined.bookmark-toggle:hover {
   color: darkorange;
 }
+
+/* Authorize 버튼 텍스트 변경 */
+.btn.authorize {
+  font-size: 0;
+}
+
+.btn.authorize * {
+  display: none;
+}
+
+.btn.authorize:after {
+  content: "testBtn";
+  font-size: 14px;
+  display: inline-block;
+}

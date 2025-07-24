@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Swagger UI - Clean Architecture</title>
+  <link rel="icon" type="image/png" href="/swagger-ui/favicon.png" />
+  
+  <!-- Swagger UI CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+  
+  <!-- 기존 커스텀 CSS 재사용 -->
+  <link rel="stylesheet" href="/swagger-ui/swagger-custom.css" />
+  
+  <!-- Material Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
+  
+  <style>
+    /* 클린 아키텍처 버전 추가 스타일 */
+    .initialization-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 50vh;
+      text-align: center;
+      padding: 20px;
+      background: #f8f8f8;
+      border-radius: 8px;
+      margin: 20px;
+    }
+
+    .initialization-error h2 {
+      color: #f44336;
+      margin-bottom: 16px;
+    }
+
+    .initialization-error details {
+      margin: 16px 0;
+      text-align: left;
+      max-width: 600px;
+    }
+
+    .initialization-error pre {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 4px;
+      overflow: auto;
+      max-height: 200px;
+      font-size: 12px;
+    }
+
+    .initialization-error button {
+      padding: 12px 24px;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .initialization-error button:hover {
+      background: #1976d2;
+    }
+
+    /* 로딩 상태 */
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      text-align: center;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #2196f3;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 알림 스타일 */
+    .error-notification,
+    .success-notification {
+      font-family: sans-serif;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    .error-notification:hover,
+    .success-notification:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    /* 개발 모드 표시 */
+    .dev-mode-indicator {
+      position: fixed;
+      top: 0;
+      left: 0;
+      background: #ff9800;
+      color: white;
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 10001;
+      border-bottom-right-radius: 4px;
+    }
+
+    /* API 트리 개선 */
+    .api-tree-empty,
+    .api-tree-loading,
+    .api-tree-error {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+      color: #666;
+    }
+
+    .empty-icon,
+    .loading-icon,
+    .error-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    .retry-button {
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .retry-button:hover {
+      background: #1976d2;
+    }
+
+    /* 새 API 배지 스타일 */
+    .new-api-badge {
+      background: linear-gradient(45deg, #ff6b35, #ff8a65);
+      color: white;
+      padding: 2px 6px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: bold;
+      margin-left: 6px;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+
+    /* 북마크 아이콘 스타일 */
+    .bookmark-icon {
+      color: #ff9800;
+      margin-right: 8px;
+      font-size: 16px;
+    }
+
+    /* 메서드 배지 스타일 */
+    .method-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      margin-right: 8px;
+      min-width: 45px;
+      text-align: center;
+    }
+
+    .method-get { background: #61affe; color: white; }
+    .method-post { background: #49cc90; color: white; }
+    .method-put { background: #fca130; color: white; }
+    .method-delete { background: #f93e3e; color: white; }
+    .method-patch { background: #50e3c2; color: white; }
+    .method-options { background: #0d5aa7; color: white; }
+    .method-head { background: #9012fe; color: white; }
+  </style>
+</head>
+<body>
+  <!-- 개발 모드 표시 (개발 중에만 표시) -->
+  <div class="dev-mode-indicator" id="dev-mode-indicator" style="display: none;">
+    CLEAN ARCHITECTURE
+  </div>
+
+  <!-- 도구 버튼 컨테이너 -->
+  <div class="swagger-tool-container">
+    <div id="new-api-counter" class="swagger-tool-btn" style="background-color: #6F42C1; cursor: default;">
+      NEW API: 0개
+    </div>
+    <button id="refresh-page-btn" class="swagger-tool-btn" style="background-color: #6db33f;">
+      새로고침
+    </button>
+    <button id="reset-localstorage-btn" class="swagger-tool-btn" style="background-color: #f44336;">
+      🗑️ LocalStorage 초기화
+    </button>
+    <button id="reset-cookie-btn" class="swagger-tool-btn" style="background-color: #2196f3;">
+      🍪 쿠키 초기화
+    </button>
+  </div>
+
+  <!-- 북마크 모달 -->
+  <div id="modal-overlay" class="hidden">
+    <div id="modal">
+      <h2 class="modal-title">API 북마크</h2>
+
+      <div class="modal-top">
+        <div class="modal-left-wrapper">
+          <h3 class="section-title">태그이름</h3>
+          <div class="modal-left" id="category-list">
+            <div class="loading-container">
+              <div class="loading-spinner"></div>
+              <div>카테고리를 로드하는 중...</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-right-wrapper">
+          <h3 class="section-title">API 엔드포인트</h3>
+          <div class="modal-right" id="subcategory-list">
+            <div class="empty-state">
+              <div class="empty-icon">📄</div>
+              <div class="empty-text">카테고리를 선택해주세요</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-bottom-wrapper">
+        <h3 class="section-title">선택된 항목</h3>
+        <div class="modal-bottom" id="selected-subcategories">
+          <div class="empty-selection">
+            <div class="empty-icon">☐</div>
+            <div class="empty-text">선택된 항목이 없습니다</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-buttons">
+        <button id="closed-modal" class="cancel-btn">취소</button>
+        <button id="save-modal" class="confirm-btn">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 컨테이너 -->
+  <div class="main-container">
+    <!-- 사이드바 -->
+    <nav class="sidebar">
+      <div class="sidebar-content">
+        <div class="sidebat-title">
+          <h3 class="custom-api-title">북마크&nbsp;&nbsp;</h3>
+          <span id="settings-btn" class="material-symbols-outlined">settings</span>
+        </div>
+        <ul id="custom-api-tree">
+          <li id="custom-api-tree-main-test">API 북마크</li>
+        </ul>
+        <h3>API 그룹</h3>
+        <ul id="api-tree">
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div>API 그룹을 로드하는 중...</div>
+          </div>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- 사이드바 토글 버튼 -->
+    <button id="toggle-sidebar-btn">☰</button>
+
+    <!-- Swagger UI 컨테이너 -->
+    <section id="swagger-ui">
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <div>Swagger UI를 초기화하는 중...</div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Swagger UI 번들 -->
+  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+
+  <!-- 클린 아키텍처 메인 애플리케이션 -->
+  <script type="module" src="/swagger-ui-clean/main.js"></script>
+
+  <script>
+    // 개발 모드 표시 (개발 환경에서만)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      document.getElementById('dev-mode-indicator').style.display = 'block';
+    }
+
+    // 전역 오류 처리
+    window.addEventListener('error', (event) => {
+      console.error('전역 오류 발생:', event.error);
+      
+      // 사용자에게 친화적인 오류 메시지 표시
+      const notification = document.createElement('div');
+      notification.className = 'error-notification';
+      notification.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #f44336; color: white; padding: 12px; border-radius: 4px; z-index: 10000;';
+      notification.textContent = '예상치 못한 오류가 발생했습니다. 페이지를 새로고침해 주세요.';
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 5000);
+    });
+
+    // 처리되지 않은 Promise 거부 처리
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('처리되지 않은 Promise 거부:', event.reason);
+      event.preventDefault();
+    });
+
+    // 성능 모니터링 (개발 환경에서만)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      window.addEventListener('load', () => {
+        if (window.performance && window.performance.timing) {
+          const loadTime = window.performance.timing.loadEventEnd - window.performance.timing.navigationStart;
+          console.log(`📊 페이지 로드 시간: ${loadTime}ms`);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
