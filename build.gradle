@@ -59,27 +59,27 @@ tasks.named('test') {
 
 
 
-def activeProfile = System.getenv('GENERATE_API_META')
-def generateApiMetaFlag = activeProfile != 'prod'
-
-if (generateApiMetaFlag) {
-	println "✅ generateApiMeta.gradle 적용됨"
-	apply from: 'generateApiMeta.gradle'
-
-	// ✅ 항상 실행되도록 설정 (불필요한 캐싱 방지)
-	tasks.named('generateApiMeta') {
-		configure {
-			outputs.upToDateWhen { false }
-		}
-	}
-
-	tasks.named('build') {
-		dependsOn 'generateApiMeta'
-	}
-
-	tasks.named('processResources') {
-		dependsOn 'generateApiMeta'
-	}
-} else {
-	println "⛔ generateApiMeta.gradle 미적용"
-}
+//def activeProfile = System.getenv('GENERATE_API_META')
+//def generateApiMetaFlag = activeProfile != 'prod'
+//
+//if (generateApiMetaFlag) {
+//	println "✅ generateApiMeta.gradle 적용됨"
+//	apply from: 'generateApiMeta.gradle'
+//
+//	// ✅ 항상 실행되도록 설정 (불필요한 캐싱 방지)
+//	tasks.named('generateApiMeta') {
+//		configure {
+//			outputs.upToDateWhen { false }
+//		}
+//	}
+//
+//	tasks.named('build') {
+//		dependsOn 'generateApiMeta'
+//	}
+//
+//	tasks.named('processResources') {
+//		dependsOn 'generateApiMeta'
+//	}
+//} else {
+//	println "⛔ generateApiMeta.gradle 미적용"
+//}

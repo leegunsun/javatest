@@ -1,304 +1,261 @@
 # Swagger UI Clean Architecture
 
-이 프로젝트는 기존 Swagger UI 커스터마이제이션 코드를 클린 아키텍처 패턴으로 리팩토링한 버전입니다.
+클린 아키텍처 원칙을 적용하여 리팩토링된 커스텀 스웨거 UI 애플리케이션입니다.
 
-## 🏗️ 아키텍처 개요
-
-클린 아키텍처의 4개 주요 레이어로 구성되어 있습니다:
+## 📁 프로젝트 구조
 
 ```
 swagger-ui-clean/
-├── domain/              # 도메인 레이어 (비즈니스 로직)
-│   ├── entities/        # 도메인 엔티티
-│   ├── repositories/    # 리포지토리 인터페이스
-│   └── services/        # 도메인 서비스
-├── application/         # 애플리케이션 레이어 (유스케이스)
-│   ├── use-cases/      # 비즈니스 유스케이스
-│   └── interfaces/     # 인터페이스 정의
-├── infrastructure/     # 인프라스트럭처 레이어 (구현체)
-│   ├── repositories/   # 리포지토리 구현
-│   ├── api-clients/    # API 클라이언트
-│   └── storage/        # 저장소 구현
-├── presentation/       # 프레젠테이션 레이어 (UI)
-│   ├── components/     # UI 컴포넌트
-│   ├── controllers/    # 컨트롤러
-│   └── views/          # 뷰 컴포넌트
-└── shared/             # 공유 레이어
-    ├── utils/          # 유틸리티 함수
-    ├── constants/      # 상수 정의
-    └── types/          # 타입 정의
+├── domain/                          # 도메인 계층
+│   ├── entities/                    # 엔터티
+│   │   ├── ApiMetadata.js          # API 메타데이터 엔터티
+│   │   ├── ApiStatus.js            # API 상태 엔터티
+│   │   └── SwaggerSpec.js          # 스웨거 스펙 엔터티
+│   └── usecases/                   # 유스케이스
+│       ├── GetApiData.js           # API 데이터 조회 유스케이스
+│       ├── FilterApiSpec.js        # API 스펙 필터링 유스케이스
+│       └── ManageBookmarks.js      # 북마크 관리 유스케이스
+├── infrastructure/                  # 인프라스트럭처 계층
+│   ├── api/                        # 외부 API
+│   │   └── SwaggerApiClient.js     # 스웨거 API 클라이언트
+│   └── storage/                    # 저장소
+│       ├── LocalStorageAdapter.js  # 로컬 스토리지 어댑터
+│       └── BookmarkRepository.js   # 북마크 저장소
+├── application/                     # 애플리케이션 계층
+│   ├── services/                   # 서비스
+│   │   ├── ApiDataService.js       # API 데이터 서비스
+│   │   ├── SwaggerUIService.js     # 스웨거 UI 서비스
+│   │   └── BookmarkService.js      # 북마크 서비스
+│   └── observers/                  # 옵저버
+│       └── SwaggerObserver.js      # 스웨거 변경 감지 옵저버
+├── presentation/                    # 프레젠테이션 계층
+│   ├── controllers/                # 컨트롤러
+│   │   ├── SwaggerController.js    # 메인 스웨거 컨트롤러
+│   │   └── BookmarkController.js   # 북마크 컨트롤러
+│   ├── views/                      # 뷰 (미구현)
+│   └── components/                 # 컴포넌트 (미구현)
+├── shared/                         # 공유 계층
+│   ├── constants/                  # 상수
+│   │   └── ApiConstants.js         # API 관련 상수
+│   ├── utils/                      # 유틸리티
+│   │   └── DomUtils.js            # DOM 조작 유틸리티
+│   └── config/                     # 설정
+│       └── AppConfig.js           # 애플리케이션 설정
+├── main.js                         # 애플리케이션 진입점
+├── index.html                      # HTML 진입점
+└── README.md                       # 프로젝트 문서
 ```
+
+## 🏗️ 아키텍처 개요
+
+### 클린 아키텍처 계층
+
+1. **도메인 계층 (Domain Layer)**
+   - 비즈니스 로직과 규칙을 담당
+   - 외부 의존성이 없는 순수한 비즈니스 로직
+   - 엔터티와 유스케이스로 구성
+
+2. **애플리케이션 계층 (Application Layer)**
+   - 도메인 유스케이스를 조율
+   - 외부 시스템과의 상호작용 관리
+   - 서비스와 옵저버로 구성
+
+3. **인프라스트럭처 계층 (Infrastructure Layer)**
+   - 외부 시스템과의 실제 연결
+   - 데이터 저장소, API 클라이언트 등
+   - 구체적인 구현 세부사항
+
+4. **프레젠테이션 계층 (Presentation Layer)**
+   - 사용자 인터페이스 담당
+   - 사용자 입력 처리 및 화면 표시
+   - 컨트롤러, 뷰, 컴포넌트로 구성
+
+5. **공유 계층 (Shared Layer)**
+   - 모든 계층에서 공통으로 사용되는 요소
+   - 상수, 유틸리티, 설정 등
+
+### 의존성 방향
+
+```
+Presentation → Application → Domain ← Infrastructure
+                ↑                        ↑
+            Shared ←────────────────────┘
+```
+
+- 의존성은 항상 내부(도메인) 방향으로 향함
+- 도메인 계층은 다른 계층에 의존하지 않음
+- 인프라스트럭처 계층은 도메인 계층에만 의존
 
 ## 🚀 주요 기능
 
-### 1. API 상태 관리
-- **엔티티**: `ApiStatus`, `ApiEndpoint`
-- **서비스**: `ApiHighlightService`
-- **유스케이스**: `HighlightApiUseCase`
+### 기존 기능 유지
+- ✅ API 상태 표시 및 하이라이팅
+- ✅ 새로운 API 카운터
+- ✅ 북마크 시스템
+- ✅ 사이드바 토글
+- ✅ 모달 기반 북마크 관리
+- ✅ 로컬 스토리지 기반 설정 저장
+- ✅ 서버 드롭다운 상태 유지
 
-API 상태에 따른 시각적 표시와 하이라이트 기능을 제공합니다.
+### 새로운 기능
+- 🆕 클린 아키텍처 기반 코드 구조
+- 🆕 의존성 주입 시스템
+- 🆕 통합된 설정 관리
+- 🆕 체계적인 에러 처리
+- 🆕 성능 모니터링
+- 🆕 개발자 도구 지원
 
-### 2. 사이드바 관리
-- **엔티티**: `SidebarState`
-- **서비스**: 사이드바 토글 및 상태 관리
-- **유스케이스**: `ManageSidebarUseCase`
+## 💻 기술 스택
 
-사이드바의 접기/펼치기 기능과 상태 유지를 담당합니다.
+- **언어**: JavaScript (ES6+)
+- **모듈 시스템**: ES Modules
+- **아키텍처**: Clean Architecture
+- **디자인 패턴**: 
+  - Repository Pattern
+  - Observer Pattern
+  - Dependency Injection
+  - Factory Pattern
+- **외부 라이브러리**:
+  - Swagger UI Bundle
+  - Material Symbols (Icons)
 
-### 3. 북마크 모달
-- **엔티티**: `ModalState`
-- **서비스**: `BookmarkService`
-- **유스케이스**: `ManageBookmarkModalUseCase`
+## 🛠️ 개발 가이드
 
-API 북마크 기능과 모달 UI를 관리합니다.
+### 새로운 기능 추가 시 주의사항
 
-### 4. Swagger UI 초기화
-- **유스케이스**: `InitializeSwaggerUseCase`
-- **리포지토리**: `SwaggerRepository`, `ApiStatusRepository`
+1. **계층별 역할 준수**
+   - 각 계층의 책임을 명확히 구분
+   - 의존성 방향 규칙 준수
 
-Swagger UI 초기화와 API 데이터 로딩을 담당합니다.
+2. **도메인 우선 개발**
+   - 새로운 기능은 도메인 계층부터 설계
+   - 비즈니스 로직을 먼저 구현
 
-## 🔧 의존성 주입
+3. **인터페이스 활용**
+   - 추상화를 통한 의존성 역전
+   - 테스트 가능한 코드 작성
 
-### DependencyContainer
-모든 의존성을 중앙에서 관리하는 컨테이너입니다:
+### 코드 컨벤션
+
+1. **파일 명명 규칙**
+   - PascalCase: 클래스 파일 (예: `ApiDataService.js`)
+   - camelCase: 유틸리티 함수 (예: `domUtils.js`)
+
+2. **클래스 구조**
+   - 생성자에서 의존성 주입
+   - public 메서드 먼저, private 메서드 나중에
+   - JSDoc 주석으로 문서화
+
+3. **에러 처리**
+   - 각 계층에서 appropriate한 에러 처리
+   - 사용자 친화적인 에러 메시지
+
+### 테스트 가이드
+
+1. **단위 테스트**
+   - 각 계층별로 독립적인 테스트
+   - Mock을 활용한 의존성 격리
+
+2. **통합 테스트**
+   - 컨트롤러 레벨에서의 통합 테스트
+   - 실제 시나리오 기반 테스트
+
+## 🔧 설정 및 설치
+
+### 브라우저 요구사항
+- Chrome 80+
+- Firefox 75+
+- Safari 13+
+- Edge 80+
+
+### 개발 환경 설정
+
+1. **로컬 서버 실행**
+   ```bash
+   # 간단한 HTTP 서버 실행 (Python 3)
+   python -m http.server 8000
+   
+   # 또는 Node.js http-server
+   npx http-server -p 8000
+   ```
+
+2. **브라우저에서 접근**
+   ```
+   http://localhost:8000/swagger-ui-clean/
+   ```
+
+## 🐛 디버깅
+
+### 개발자 도구 활용
 
 ```javascript
-const container = new DependencyContainer();
+// 브라우저 콘솔에서 애플리케이션 상태 확인
+window.SwaggerApp.getStatus()
 
-// 사용 예시
-const useCase = container.get('InitializeSwaggerUseCase');
-await useCase.execute();
+// 컴포넌트 직접 접근
+window.SwaggerApp.components.apiDataService
+
+// 설정 확인
+window.SwaggerApp.components.appConfig.getSummary()
 ```
 
-### 의존성 그래프
-```
-InitializeSwaggerUseCase
-├── SwaggerRepository
-├── ApiStatusRepository
-├── SidebarStateRepository
-└── ApiHighlightService
-    └── ApiStatusRepository
+### 로그 레벨 설정
 
-ManageSidebarUseCase
-├── SidebarStateRepository
-├── TreeBuilder
-└── SidebarRenderer
-
-ManageBookmarkModalUseCase
-├── BookmarkService
-├── SwaggerRepository
-├── ModalStateRepository
-└── ModalRenderer
-```
-
-## 📝 사용 방법
-
-### 1. 애플리케이션 시작
 ```javascript
-import app from '/swagger-ui-clean/main.js';
-
-// 애플리케이션은 자동으로 초기화됩니다
-// 수동 초기화가 필요한 경우:
-await app.initialize();
-```
-
-### 2. 개별 기능 사용
-```javascript
-// 의존성 컨테이너에서 직접 사용
-import { container } from '/swagger-ui-clean/DependencyContainer.js';
-
-const bookmarkService = container.get('BookmarkService');
-bookmarkService.addBookmark('/api/users');
-
-const sidebarUseCase = container.get('ManageSidebarUseCase');
-await sidebarUseCase.toggleSidebar();
-```
-
-## 🏛️ 아키텍처 원칙
-
-### 1. 의존성 역전 원칙 (DIP)
-- 상위 레벨 모듈이 하위 레벨 모듈에 의존하지 않음
-- 인터페이스를 통한 의존성 주입 사용
-
-### 2. 단일 책임 원칙 (SRP)
-- 각 클래스와 모듈은 하나의 책임만 가짐
-- 변경의 이유가 하나뿐
-
-### 3. 개방-폐쇄 원칙 (OCP)
-- 확장에는 열려있고 수정에는 닫혀있음
-- 인터페이스를 통한 확장성 제공
-
-### 4. 인터페이스 분리 원칙 (ISP)
-- 클라이언트가 사용하지 않는 인터페이스에 의존하지 않음
-- 세분화된 인터페이스 설계
-
-## 🔍 레이어별 상세 설명
-
-### Domain Layer (도메인 레이어)
-비즈니스 로직과 엔티티를 포함하는 핵심 레이어입니다.
-
-**주요 컴포넌트**:
-- `ApiStatus`: API 상태 정보를 나타내는 엔티티
-- `ApiEndpoint`: API 엔드포인트 정보를 담는 엔티티
-- `SidebarState`: 사이드바 상태를 관리하는 엔티티
-- `BookmarkService`: 북마크 관련 비즈니스 로직
-
-### Application Layer (애플리케이션 레이어)
-도메인 레이어를 조합하여 구체적인 유스케이스를 구현합니다.
-
-**주요 유스케이스**:
-- `InitializeSwaggerUseCase`: Swagger UI 초기화
-- `ManageSidebarUseCase`: 사이드바 관리
-- `ManageBookmarkModalUseCase`: 북마크 모달 관리
-- `HighlightApiUseCase`: API 하이라이트 관리
-
-### Infrastructure Layer (인프라스트럭처 레이어)
-외부 시스템과의 연동 및 데이터 저장을 담당합니다.
-
-**주요 구현체**:
-- `ApiStatusRepositoryImpl`: API 상태 데이터 저장소
-- `SwaggerRepositoryImpl`: Swagger API 데이터 접근
-- `StorageRepositoryImpl`: 브라우저 저장소 접근
-
-### Presentation Layer (프레젠테이션 레이어)
-사용자 인터페이스와 상호작용을 담당합니다.
-
-**주요 컴포넌트**:
-- `SidebarRendererImpl`: 사이드바 렌더링
-- `ModalRendererImpl`: 모달 렌더링
-- `HighlightRendererImpl`: API 하이라이트 렌더링
-
-## 🧪 테스트
-
-### 단위 테스트 작성 가이드
-```javascript
-// 예시: BookmarkService 테스트
-import { BookmarkService } from '../domain/services/BookmarkService.js';
-
-describe('BookmarkService', () => {
-  let service;
-  let mockStorage;
-
-  beforeEach(() => {
-    mockStorage = {
-      getItem: jest.fn(),
-      setItem: jest.fn(),
-      removeItem: jest.fn()
-    };
-    service = new BookmarkService(mockStorage);
-  });
-
-  test('북마크 추가', () => {
-    mockStorage.getItem.mockReturnValue('[]');
-    
-    service.addBookmark('/api/users');
-    
-    expect(mockStorage.setItem).toHaveBeenCalledWith(
-      'swagger_bookmarks', 
-      JSON.stringify(['/api/users'])
-    );
-  });
-});
-```
-
-## 🚧 확장 가이드
-
-### 새로운 기능 추가
-1. **도메인 엔티티 정의**: `domain/entities/`에 새 엔티티 생성
-2. **유스케이스 구현**: `application/use-cases/`에 비즈니스 로직 구현
-3. **인프라 구현**: `infrastructure/`에 데이터 접근 로직 구현
-4. **프레젠테이션 구현**: `presentation/`에 UI 컴포넌트 구현
-5. **의존성 등록**: `DependencyContainer.js`에 의존성 추가
-
-### 예시: 새로운 필터 기능 추가
-```javascript
-// 1. 도메인 엔티티
-export class ApiFilter {
-  constructor(criteria, value) {
-    this.criteria = criteria;
-    this.value = value;
-  }
-}
-
-// 2. 유스케이스
-export class FilterApiUseCase {
-  constructor(swaggerRepository, filterRenderer) {
-    this.swaggerRepository = swaggerRepository;
-    this.filterRenderer = filterRenderer;
-  }
-
-  async execute(filter) {
-    const apis = await this.swaggerRepository.getFilteredApis(filter);
-    this.filterRenderer.render(apis);
-  }
-}
-
-// 3. 의존성 등록
-container.register('FilterApiUseCase', 
-  new FilterApiUseCase(
-    container.get('SwaggerRepository'),
-    container.get('FilterRenderer')
-  )
-);
+// 설정을 통한 로그 레벨 변경
+window.SwaggerApp.components.appConfig.set('developer.logLevel', 'debug')
 ```
 
 ## 📈 성능 최적화
 
-### 1. 지연 로딩
-```javascript
-// DependencyContainer에서 지연 로딩 사용
-container.registerLazy('HeavyComponent', () => 
-  new HeavyComponent()
-);
-```
+### 캐싱 전략
+- API 데이터: 5분 캐싱
+- 설정 데이터: 로컬 스토리지 영구 저장
+- UI 상태: 세션 기반 임시 저장
 
-### 2. 메모이제이션
-```javascript
-// API 응답 캐싱
-class SwaggerRepositoryImpl {
-  constructor() {
-    this.cache = new Map();
-  }
+### 지연 로딩
+- 모달 콘텐츠 지연 로딩
+- 대용량 API 스펙 청크 단위 로딩
 
-  async getSwaggerSpec(groupName) {
-    if (this.cache.has(groupName)) {
-      return this.cache.get(groupName);
-    }
-    
-    const spec = await this.fetchSpec(groupName);
-    this.cache.set(groupName, spec);
-    return spec;
-  }
-}
-```
+## 🔒 보안 고려사항
 
-## 🐛 디버깅
+1. **XSS 방지**
+   - innerHTML 사용 시 새니타이징
+   - 사용자 입력 검증
 
-### 개발 모드
-- 브라우저 개발자 도구에서 `window.swaggerApp`으로 애플리케이션 상태 확인
-- `container.logStatus()`로 의존성 상태 확인
+2. **데이터 검증**
+   - API 응답 데이터 유효성 검증
+   - 로컬 스토리지 데이터 검증
 
-### 로깅
-```javascript
-// 각 레이어별 상세 로그 확인
-console.log('애플리케이션 상태:', app.getStatus());
-console.log('의존성 상태:', container.validateDependencies());
-```
+## 🚀 배포 가이드
+
+### 프로덕션 빌드
+1. 개발자 도구 비활성화
+2. 로그 레벨을 'error'로 설정
+3. 성능 모니터링 활성화
+
+### 환경별 설정
+- Development: 디버그 모드 활성화
+- Production: 최적화 및 모니터링 활성화
+- Test: 테스트 전용 설정
 
 ## 📚 참고 자료
 
-- [Clean Architecture (Robert C. Martin)](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [Dependency Injection Pattern](https://martinfowler.com/articles/injection.html)
-- [SOLID Principles](https://en.wikipedia.org/wiki/SOLID)
+- [Clean Architecture by Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
+- [Swagger UI Documentation](https://swagger.io/tools/swagger-ui/)
+- [JavaScript Clean Code Guidelines](https://github.com/ryanmcdermott/clean-code-javascript)
 
 ## 🤝 기여 가이드
 
-1. 코드 스타일 가이드 준수
-2. 각 레이어의 책임 경계 준수
-3. 단위 테스트 작성
-4. 문서 업데이트
+1. **이슈 생성**: 버그 리포트나 기능 요청
+2. **브랜치 생성**: `feature/기능명` 또는 `fix/버그명`
+3. **커밋 메시지**: [Conventional Commits](https://www.conventionalcommits.org/) 규칙 준수
+4. **코드 리뷰**: 아키텍처 원칙 준수 여부 검토
 
-## 📄 라이선스
+## 📝 라이선스
 
-이 프로젝트는 기존 프로젝트의 라이선스를 따릅니다.
+이 프로젝트는 기존 우리샵 프로젝트의 일부로서 해당 프로젝트의 라이선스를 따릅니다.
+
+---
+
+**주의**: 이 문서는 클린 아키텍처로 리팩토링된 새로운 버전에 대한 것입니다. 기존 구현과 호환되지 않을 수 있으므로 마이그레이션 시 주의가 필요합니다.
