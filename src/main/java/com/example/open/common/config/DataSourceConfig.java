@@ -13,10 +13,10 @@ public class DataSourceConfig {
     public DataSource dataSource () {
         HikariDataSource dataSource = new HikariDataSource();
 
-        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        dataSource.setJdbcUrl("jdbc:mysql://localhost:3306/todo");
-        dataSource.setUsername("root");
-        dataSource.setPassword("root");
+        dataSource.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        dataSource.setJdbcUrl("jdbc:sqlserver://localhost:1433;databaseName=testdb;trustServerCertificate=true");
+        dataSource.setUsername("sa");
+        dataSource.setPassword("YourStrong!Passw0rd");
         return dataSource;
     }
 }

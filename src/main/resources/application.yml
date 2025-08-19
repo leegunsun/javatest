@@ -8,12 +8,14 @@ spring:
     name: open-green
   profiles:
     active: dev
+  datasource:
+    url: jdbc:sqlserver://localhost:1433;databaseName=testdb;trustServerCertificate=true
+    username: sa
+    password: YourStrong!Passw0rd
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
   flyway:
-    enabled: true
+    enabled: false
     baseline-on-migrate: true
-    url: jdbc:mysql://localhost:3306/todo
-    user: root
-    password: root
   session:
     store-type: redis
     redis:
@@ -24,9 +26,12 @@ spring:
         - localhost:31971
       max-redirects: 3
   jpa:
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    hibernate:
+      ddl-auto: update
     properties:
       hibernate:
-        show_sql=true: true
+        show_sql: true
         format_sql: true
 
 server:
