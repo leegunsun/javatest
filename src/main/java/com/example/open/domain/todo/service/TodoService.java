@@ -1,36 +1,41 @@
 package com.example.open.domain.todo.service;
 
 import com.example.open.domain.todo.entity.Todo;
-import com.example.open.domain.todo.repository.TodoRepository;
+import com.example.open.domain.todo.repository.TodoJpaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class TodoService {
 
-    private final TodoRepository todoRepository;
+    private final TodoJpaRepository todoJpaRepository;
 
     public List<Todo> getAllTodos() {
-        return todoRepository.findAll();
+        return todoJpaRepository.findAll();
     }
 
     public Optional<Todo> getTodoById(Long id) {
-        return todoRepository.findById(id);
+        return todoJpaRepository.findById(id);
     }
 
+    @Transactional
     public void createTodo(Todo todo) {
-        todoRepository.save(todo);
+        todoJpaRepository.save(todo);
     }
 
+    @Transactional
     public void updateTodo(Todo todo) {
-        todoRepository.update(todo);
+        todoJpaRepository.save(todo);
     }
 
+    @Transactional
     public void deleteTodoById(Long id) {
-        todoRepository.delete(id);
+        todoJpaRepository.deleteById(id);
     }
 }

@@ -1,6 +1,9 @@
 package com.example.open.domain.todo.controller;
 
 import com.example.open.common.service.RedisService;
+import com.example.open.domain.dto.A;
+import com.example.open.domain.dto.AExtends;
+import io.swagger.v3.oas.annotations.Operation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -21,15 +24,13 @@ public class HomeController {
     private RedisService redisService;
 
     @GetMapping("/")
-    public String home(Model model) {
+    @Operation()
+    public A home(Model model) {
 
-        LocalDateTime localDateTime = LocalDateTime.now();
-
-        model.addAttribute("username", "개발자홍길동");
-        model.addAttribute("message", "Thymeleaf를 환영합니다!");
-        model.addAttribute("name", "name!");
-//        model.addAttribute("time", localDateTime);
-        return "home"; // → templates/home.html 렌더링
+        return A.builder()
+                .aTest("example")
+                .aBaseItem(AExtends.builder().aExtendsTest("test").build())
+                .build();
     }
 
     @GetMapping("/redis-test")
