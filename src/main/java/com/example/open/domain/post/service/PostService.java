@@ -66,14 +66,14 @@ public class PostService {
     /**
      * 게시물 상세 조회
      */
-    public PostDto getPost(Long postId) {
-        Post post = postRepository.findPostWithVirtualNumber(postId);
-
-        // 조회수 증가 (비동기 처리)
-        incrementViewCountAsync(postId);
-
-        return PostDto.from(post);
-    }
+//    public PostDto getPost(Long postId) {
+//        Post post = postRepository.findPostWithVirtualNumber(postId);
+//
+//        // 조회수 증가 (비동기 처리)
+//        incrementViewCountAsync(postId);
+//
+//        return PostDto.from(post);
+//    }
 
     /**
      * 게시물 생성

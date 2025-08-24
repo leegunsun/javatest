@@ -204,9 +204,11 @@ public class RedisController {
             redisService.deleteKey(testKey);
             
             boolean isHealthy = testValue.equals(retrievedValue);
+            boolean isCluster = redisService.isClusterEnabled();
             
             response.put("success", true);
             response.put("healthy", isHealthy);
+            response.put("cluster_enabled", isCluster);
             response.put("message", isHealthy ? "Redis 연결이 정상입니다" : "Redis 연결에 문제가 있습니다");
             response.put("timestamp", System.currentTimeMillis());
             
@@ -214,7 +216,52 @@ public class RedisController {
         } catch (Exception e) {
             response.put("success", false);
             response.put("healthy", false);
+            response.put("cluster_enabled", false);
             response.put("message", "Redis 연결 확인 중 오류가 발생했습니다: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping("/cluster/info")
+    @Operation(summary = "Redis 클러스터 정보", description = "Redis 클러스터 정보를 조회합니다")
+    public ResponseEntity<Map<String, Object>> getClusterInfo() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            String clusterInfo = redisService.getClusterInfo();
+            boolean isClusterEnabled = redisService.isClusterEnabled();
+            
+            response.put("success", true);
+            response.put("cluster_enabled", isClusterEnabled);
+            response.put("cluster_info", clusterInfo);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "클러스터 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
+
+    @GetMapping("/cluster/nodes")
+    @Operation(summary = "Redis 클러스터 노드 정보", description = "Redis 클러스터 노드 정보를 조회합니다")
+    public ResponseEntity<Map<String, Object>> getClusterNodes() {
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            String clusterNodes = redisService.getClusterNodes();
+            boolean isClusterEnabled = redisService.isClusterEnabled();
+            
+            response.put("success", true);
+            response.put("cluster_enabled", isClusterEnabled);
+            response.put("cluster_nodes", clusterNodes);
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "클러스터 노드 정보 조회 중 오류가 발생했습니다: " + e.getMessage());
             return ResponseEntity.badRequest().body(response);
         }
     }

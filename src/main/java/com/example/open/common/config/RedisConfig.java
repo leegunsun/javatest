@@ -1,30 +1,60 @@
 package com.example.open.common.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+import java.util.List;
+
 @Configuration
+@EnableConfigurationProperties(RedisConfig.RedisClusterProperties.class)
 public class RedisConfig {
 
-    @Value("${spring.data.redis.host:localhost}")
-    private String redisHost;
+    private final RedisClusterProperties clusterProperties;
 
-    @Value("${spring.data.redis.port:6379}")
-    private int redisPort;
+    public RedisConfig(RedisClusterProperties clusterProperties) {
+        this.clusterProperties = clusterProperties;
+    }
+
+    @Bean
+    public RedisClusterConfiguration redisClusterConfiguration() {
+        RedisClusterConfiguration clusterConfiguration = new RedisClusterConfiguration(clusterProperties.getNodes());
+        clusterConfiguration.setMaxRedirects(clusterProperties.getMaxRedirects());
+        return clusterConfiguration;
+    }
 
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration();
-        redisStandaloneConfiguration.setHostName(redisHost);
-        redisStandaloneConfiguration.setPort(redisPort);
-        return new LettuceConnectionFactory(redisStandaloneConfiguration);
+        return new LettuceConnectionFactory(redisClusterConfiguration());
+    }
+
+    @ConfigurationProperties(prefix = "spring.data.redis.cluster")
+    public static class RedisClusterProperties {
+        private List<String> nodes;
+        private int maxRedirects = 3;
+
+        public List<String> getNodes() {
+            return nodes;
+        }
+
+        public void setNodes(List<String> nodes) {
+            this.nodes = nodes;
+        }
+
+        public int getMaxRedirects() {
+            return maxRedirects;
+        }
+
+        public void setMaxRedirects(int maxRedirects) {
+            this.maxRedirects = maxRedirects;
+        }
     }
 
     @Bean

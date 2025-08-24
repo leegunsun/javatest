@@ -7,5 +7,5 @@ import org.springframework.data.domain.Pageable;
 // 커스텀 Repository 인터페이스
 public interface PostRepositoryCustom {
     Page<Post> findPostsWithVirtualNumber(Integer boardId, Pageable pageable);
-    Post findPostWithVirtualNumber(Long postId);
+//    Post findPostWithVirtualNumber(Long postId);
 }

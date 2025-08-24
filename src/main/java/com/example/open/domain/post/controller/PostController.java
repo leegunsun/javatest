@@ -27,11 +27,11 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{postId}")
-    public ResponseEntity<PostDto> getPost(@PathVariable Long postId) {
-        PostDto post = postService.getPost(postId);
-        return ResponseEntity.ok(post);
-    }
+//    @GetMapping("/{postId}")
+//    public ResponseEntity<PostDto> getPost(@PathVariable Long postId) {
+//        PostDto post = postService.getPost(postId);
+//        return ResponseEntity.ok(post);
+//    }
 
     @PostMapping
     public ResponseEntity<PostDto> createPost(
