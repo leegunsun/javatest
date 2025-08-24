@@ -6,6 +6,7 @@ services:
     container_name: redis-node-1
     ports:
       - "7001:6379"
+      - "17001:16379"
     networks:
       - redis_cluster_network
     volumes:
@@ -15,8 +16,12 @@ services:
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
+      --cluster-announce-ip redis-node-1
+      --cluster-announce-port 6379
+      --cluster-announce-bus-port 16379
       --appendonly yes
       --port 6379
+      --protected-mode no
       --save ""
 
   redis-node-2:
@@ -24,6 +29,7 @@ services:
     container_name: redis-node-2
     ports:
       - "7002:6379"
+      - "17002:16379"
     networks:
       - redis_cluster_network
     volumes:
@@ -33,8 +39,12 @@ services:
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
+      --cluster-announce-ip redis-node-2
+      --cluster-announce-port 6379
+      --cluster-announce-bus-port 16379
       --appendonly yes
       --port 6379
+      --protected-mode no
       --save ""
 
   redis-node-3:
@@ -42,6 +52,7 @@ services:
     container_name: redis-node-3
     ports:
       - "7003:6379"
+      - "17003:16379"
     networks:
       - redis_cluster_network
     volumes:
@@ -51,8 +62,12 @@ services:
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
+      --cluster-announce-ip redis-node-3
+      --cluster-announce-port 6379
+      --cluster-announce-bus-port 16379
       --appendonly yes
       --port 6379
+      --protected-mode no
       --save ""
 
   redis-node-4:
@@ -60,6 +75,7 @@ services:
     container_name: redis-node-4
     ports:
       - "7004:6379"
+      - "17004:16379"
     networks:
       - redis_cluster_network
     volumes:
@@ -69,8 +85,12 @@ services:
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
+      --cluster-announce-ip redis-node-4
+      --cluster-announce-port 6379
+      --cluster-announce-bus-port 16379
       --appendonly yes
       --port 6379
+      --protected-mode no
       --save ""
 
   redis-node-5:
@@ -78,6 +98,7 @@ services:
     container_name: redis-node-5
     ports:
       - "7005:6379"
+      - "17005:16379"
     networks:
       - redis_cluster_network
     volumes:
@@ -87,8 +108,12 @@ services:
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
+      --cluster-announce-ip redis-node-5
+      --cluster-announce-port 6379
+      --cluster-announce-bus-port 16379
       --appendonly yes
       --port 6379
+      --protected-mode no
       --save ""
 
   redis-node-6:
@@ -96,6 +121,7 @@ services:
     container_name: redis-node-6
     ports:
       - "7006:6379"
+      - "17006:16379"
     networks:
       - redis_cluster_network
     volumes:
@@ -105,12 +131,15 @@ services:
       --cluster-enabled yes
       --cluster-config-file nodes.conf
       --cluster-node-timeout 5000
+      --cluster-announce-ip redis-node-6
+      --cluster-announce-port 6379
+      --cluster-announce-bus-port 16379
       --appendonly yes
       --port 6379
+      --protected-mode no
       --save ""
 
   # Redis Cluster Initializer
-  # Redis Cluster Initializer (수정된 버전)
   redis-cluster-init:
     image: redis:7-alpine
     container_name: redis-cluster-init
@@ -125,9 +154,22 @@ services:
       - redis-node-6
     command: >
       sh -c "
+      echo 'Waiting for Redis nodes to be ready...' &&
       sleep 10 &&
+      for node in redis-node-1 redis-node-2 redis-node-3 redis-node-4 redis-node-5 redis-node-6; do
+        until redis-cli -h \$node ping; do
+          echo 'Waiting for' \$node'...' &&
+          sleep 2;
+        done;
+        echo \$node 'is ready!';
+      done &&
+      echo 'Creating Redis cluster...' &&
       redis-cli --cluster create redis-node-1:6379 redis-node-2:6379 redis-node-3:6379 redis-node-4:6379 redis-node-5:6379 redis-node-6:6379 --cluster-replicas 1 --cluster-yes &&
-      echo 'Redis cluster initialized successfully!'
+      echo 'Redis cluster initialized successfully!' &&
+      echo 'Checking cluster info...' &&
+      redis-cli -h redis-node-1 cluster info &&
+      echo 'Checking cluster nodes...' &&
+      redis-cli -h redis-node-1 cluster nodes
       "
 
   # Kafka services (keeping existing)
