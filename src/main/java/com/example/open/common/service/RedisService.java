@@ -1,11 +1,13 @@
 package com.example.open.common.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisCallback;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -151,5 +153,34 @@ public class RedisService {
 
     public void flushAll() {
         redisTemplate.getConnectionFactory().getConnection().flushAll();
+    }
+    // Cluster-specific methods
+    public String getClusterInfo() {
+        try {
+            return (String) redisTemplate.execute((RedisCallback<String>) (connection) -> {
+                return new String((byte[]) Objects.requireNonNull(connection.execute("CLUSTER", "INFO".getBytes())));
+            });
+        } catch (Exception e) {
+            return "Cluster info not available: " + e.getMessage();
+        }
+    }
+
+    public String getClusterNodes() {
+        try {
+            return (String) redisTemplate.execute((RedisCallback<String>) (connection) -> {
+                return new String((byte[]) Objects.requireNonNull(connection.execute("CLUSTER", "NODES".getBytes())));
+            });
+        } catch (Exception e) {
+            return "Cluster nodes info not available: " + e.getMessage();
+        }
+    }
+
+    public boolean isClusterEnabled() {
+        try {
+            String info = getClusterInfo();
+            return info != null && info.contains("cluster_state:ok");
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
