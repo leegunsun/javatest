@@ -24,12 +24,9 @@ spring:
     redis:
       cluster:
         nodes:
-          - localhost:7001
-          - localhost:7002
-          - localhost:7003
-          - localhost:7004
-          - localhost:7005
-          - localhost:7006
+          - 192.168.0.7:7001
+          - 192.168.0.7:7002
+          - 192.168.0.7:7003
         max-redirects: 3
       timeout: 2000ms
       lettuce:

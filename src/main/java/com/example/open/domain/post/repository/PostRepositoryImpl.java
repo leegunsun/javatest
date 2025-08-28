@@ -45,27 +45,27 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
         return new PageImpl<>(posts, pageable, totalCount);
     }
 
-    @Override
-    public Post findPostWithVirtualNumber(Long postId) {
-        String query = "SELECT p FROM Post p WHERE p.id = :postId AND p.isDeleted = false";
-        
-        Post post = entityManager.createQuery(query, Post.class)
-                .setParameter("postId", postId)
-                .getSingleResult();
-        
-        if (post != null) {
-            // 해당 게시물보다 최신 게시물 수를 계산하여 가상 번호 설정
-            String countQuery = "SELECT COUNT(p) FROM Post p WHERE p.boardId = :boardId " +
-                               "AND p.isDeleted = false AND p.createdAt >= :createdAt";
-            
-            Long newerPostsCount = entityManager.createQuery(countQuery, Long.class)
-                    .setParameter("boardId", post.getBoardId())
-                    .setParameter("createdAt", post.getCreatedAt())
-                    .getSingleResult();
-            
-            post.setVirtualNumber(newerPostsCount);
-        }
-        
-        return post;
-    }
+//    @Override
+//    public Post findPostWithVirtualNumber(Long postId) {
+//        String query = "SELECT p FROM Post p WHERE p.id = :postId AND p.isDeleted = false";
+//
+//        Post post = entityManager.createQuery(query, Post.class)
+//                .setParameter("postId", postId)
+//                .getSingleResult();
+//
+//        if (post != null) {
+//            // 해당 게시물보다 최신 게시물 수를 계산하여 가상 번호 설정
+//            String countQuery = "SELECT COUNT(p) FROM Post p WHERE p.boardId = :boardId " +
+//                               "AND p.isDeleted = false AND p.createdAt >= :createdAt";
+//            
+//            Long newerPostsCount = entityManager.createQuery(countQuery, Long.class)
+//                    .setParameter("boardId", post.getBoardId())
+//                    .setParameter("createdAt", post.getCreatedAt())
+//                    .getSingleResult();
+//
+//            post.setVirtualNumber(newerPostsCount);
+//        }
+//
+//        return post;
+//    }
 }
