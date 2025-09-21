@@ -19,10 +19,15 @@ spring:
     redis:
       namespace: testgunsun
   redis:
-    cluster:
-      nodes:
-        - localhost:31971
-      max-redirects: 3
+    host: localhost
+    port: 31971
+    timeout: 60000
+    lettuce:
+      pool:
+          max-active: 10
+          max-idle: 8
+          min-idle: 2
+          max-wait: 3000ms
   jpa:
     properties:
       hibernate:
