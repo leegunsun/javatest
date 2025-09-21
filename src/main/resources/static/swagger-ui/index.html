@@ -1,153 +1,148 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Custom Swagger UI</title>
+<head>
+    <meta charset="UTF-8">
+    <title>우리샵 Swagger API</title>
     <link rel="icon" type="image/png" href="/swagger-ui/favicon.png" />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/swagger-ui-dist/swagger-ui.css"
-    />
-    <link rel="stylesheet" href="/swagger-ui/swagger-custom.css" />
     <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css">
     <link rel="stylesheet" href="/swagger-ui/swagger-custom.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" />
 
     <script type="module" src="/swagger-ui/scripts/main.js"></script>
     <style>
-      /* 전체 배경 색상 */
-      body {
-        background-color: #f5f5f5;
-        margin: 0;
-        font-family: sans-serif;
-      }
+        /* 전체 배경 색상 */
+        body {
+          background-color: #f5f5f5;
+          margin: 0;
+          font-family: sans-serif;
+        }
 
-      /* 버튼들을 감싸는 컨테이너 */
-      .swagger-tool-container {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 9999;
-        display: flex;
-        gap: 10px;
-      }
+        /* 버튼들을 감싸는 컨테이너 */
+        .swagger-tool-container {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          z-index: 9999;
+          display: flex;
+          gap: 10px;
+        }
 
-      /* 버튼 공통 스타일 */
-      .swagger-tool-btn {
-        padding: 8px 12px;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-weight: bold;
-        cursor: pointer;
-      }
+        /* 버튼 공통 스타일 */
+        .swagger-tool-btn {
+          padding: 8px 12px;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: bold;
+          cursor: pointer;
+        }
 
-      /* 각 버튼 개별 색상 */
-      #refresh-page-btn {
-        background-color: #6db33f;
-      }
+        /* 각 버튼 개별 색상 */
+        #refresh-page-btn {
+          background-color: #6DB33F;
+        }
 
-      #refresh-page-btn:hover {
-        background-color: #388e3c;
-      }
+        #refresh-page-btn:hover {
+          background-color: #388E3C;
+        }
 
-      #reset-localstorage-btn {
-        background-color: #f44336;
-      }
+        #reset-localstorage-btn {
+          background-color: #f44336;
+        }
 
-      #reset-localstorage-btn:hover {
-        background-color: #d32f2f;
-      }
+        #reset-localstorage-btn:hover {
+          background-color: #d32f2f;
+        }
 
-      #reset-cookie-btn {
-        background-color: #2196f3;
-      }
+        #reset-cookie-btn {
+          background-color: #2196F3;
+        }
 
-      #reset-cookie-btn:hover {
-        background-color: #1976d2;
-      }
+        #reset-cookie-btn:hover {
+          background-color: #1976D2;
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
 
-  <!-- ① 도구 버튼 전용 컨테이너: 절대 배치, z-index로 버튼만 위에 띄우기 -->
-  <div class="swagger-tool-container">
+<!-- ① 도구 버튼 전용 컨테이너: 절대 배치, z-index로 버튼만 위에 띄우기 -->
+<div class="swagger-tool-container">
     <div id="new-api-counter"
          class="swagger-tool-btn"
          style="background-color: #6F42C1; cursor: default;">
-      NEW API: 0개
+        NEW API: 0개
     </div>
     <button id="refresh-page-btn" class="swagger-tool-btn">새로고침</button>
     <button id="reset-localstorage-btn" class="swagger-tool-btn">🗑️ LocalStorage 초기화</button>
     <button id="reset-cookie-btn" class="swagger-tool-btn">🍪 쿠키 초기화</button>
-  </div>
+</div>
 
-  <!-- 모달을 감싸는 전체 배경 -->
-  <div id="modal-overlay" class="hidden">
+<!-- 모달을 감싸는 전체 배경 -->
+<div id="modal-overlay" class="hidden">
     <div id="modal">
-      <!-- ✅ 최상단 모달 타이틀 -->
-      <h2 class="modal-title">API 북마크</h2>
+        <!-- ✅ 최상단 모달 타이틀 -->
+        <h2 class="modal-title">API 북마크</h2>
 
-      <!-- 상단 영역 -->
-      <div class="modal-top">
-        <div class="modal-left-wrapper">
-          <h3 class="section-title">태그이름</h3>
-          <div class="modal-left" id="category-list" flex-direction="column">
-            <!-- 동적 생성 영역 -->
-          </div>
+        <!-- 상단 영역 -->
+        <div class="modal-top">
+            <div class="modal-left-wrapper">
+                <h3 class="section-title">태그이름</h3>
+                <div class="modal-left" id="category-list" flex-direction="column">
+                    <!-- 동적 생성 영역 -->
+                </div>
+            </div>
+
+            <!-- modal-right -->
+            <div class="modal-right-wrapper">
+                <h3 class="section-title">API 엔드포인트</h3>
+                <div class="modal-right" id="subcategory-list">
+                    <!-- 동적 생성 영역 -->
+                </div>
+            </div>
         </div>
 
-        <!-- modal-right -->
-        <div class="modal-right-wrapper">
-          <h3 class="section-title">API 엔드포인트</h3>
-          <div class="modal-right" id="subcategory-list">
-            <!-- 동적 생성 영역 -->
-          </div>
+        <div class="modal-bottom-wrapper">
+            <h3 class="section-title">선택된 항목</h3>
+            <div class="modal-bottom" id="selected-subcategories">
+                <!-- 동적 생성 영역 -->
+            </div>
         </div>
-      </div>
 
-      <div class="modal-bottom-wrapper">
-        <h3 class="section-title">선택된 항목</h3>
-        <div class="modal-bottom" id="selected-subcategories">
-          <!-- 동적 생성 영역 -->
+        <!-- 버튼 영역 -->
+        <div class="modal-buttons">
+            <button id="closed-modal" class="cancel-btn">취소</button>
+            <button id="save-modal" class="confirm-btn">확인</button>
         </div>
-      </div>
-
-      <!-- 버튼 영역 -->
-      <div class="modal-buttons">
-        <button id="closed-modal" class="cancel-btn">취소</button>
-        <button id="save-modal" class="confirm-btn">확인</button>
-      </div>
     </div>
 
-  </div>
-  <!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
-  <div class="main-container" style="flex-direction: row">
-    <nav class="sidebar">
-      <div
-              class="empty"
-              id="empyt-box"
-              style="padding-left: 20px; flex-direction: row"
-      >
-        <div class="sidebar-content">
-          <div class="sidebat-title">
-            <h3 class="custom-api-title">북마크&nbsp;&nbsp;</h3>
-            <span id="settings-btn" class="material-symbols-outlined" >settings</span>
+</div>
+    <!-- ② 레이아웃 래퍼: flex로 사이드바와 UI를 나란히 배치 -->
+    <div class="main-container" style="flex-direction: row">
+      <nav class="sidebar">
+        <div
+          class="empty"
+          id="empyt-box"
+          style="padding-left: 20px; flex-direction: row"
+        >
+          <div class="sidebar-content">
+            <div class="sidebat-title">
+              <h3 class="custom-api-title">북마크&nbsp;&nbsp;</h3>
+              <span id="settings-btn" class="material-symbols-outlined" >settings</span>
+            </div>
+            <ul id="custom-api-tree">
+              <li id="custom-api-tree-main-test">API 북마크</li>
+            </ul>
+            <h3>API 그룹</h3>
+            <ul id="api-tree"></ul>
           </div>
-          <ul id="custom-api-tree">
-            <li id="custom-api-tree-main-test">API 북마크</li>
-          </ul>
-          <h3>API 그룹</h3>
-          <ul id="api-tree"></ul>
         </div>
-      </div>
-    </nav>
-    <button id="toggle-sidebar-btn">☰</button>
-    <section id="swagger-ui"></section>
-  </div>
+      </nav>
+      <button id="toggle-sidebar-btn">☰</button>
+      <section id="swagger-ui"></section>
+    </div>
 
 
-  <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+<script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
 
-  </body>
+</body>
 </html>
