@@ -16,6 +16,28 @@
             }
         }
     },
+    "com.example.open.domain.order.controller.OrderController": {
+        "tag": {
+            "name": "Order",
+            "description": "\uc8fc\ubb38 API"
+        },
+        "methods": {
+            "createOrder": {
+                "date": "2025-12-01"
+            }
+        }
+    },
+    "com.example.open.domain.order.kafka.controller.TaskProgressController": {
+        "tag": {
+            "name": "Task Progress",
+            "description": "Kafka \uc791\uc5c5 \uc9c4\ud589\ub960 SSE API"
+        },
+        "methods": {
+            "subscribe": {
+                "date": "unknown"
+            }
+        }
+    },
     "com.example.open.domain.todo.controller.TodoController": {
         "tag": {
             "name": "todos",
