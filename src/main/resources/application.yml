@@ -15,21 +15,17 @@ spring:
     user: root
     password: root
   session:
-    store-type: none  # Kafka 테스트를 위해 Redis 비활성화
-  # redis:
-  #   host: localhost
-  #   port: 31971
-  #   timeout: 60000
-  #   lettuce:
-  #     pool:
-  #         max-active: 10
-  #         max-idle: 8
-  #         min-idle: 2
-  #         max-wait: 3000ms
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
-      - org.springframework.boot.autoconfigure.session.SessionAutoConfiguration
+    store-type: redis
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 60000
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 8
+        min-idle: 2
+        max-wait: 3000ms
   jpa:
     properties:
       hibernate:
