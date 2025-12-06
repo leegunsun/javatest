@@ -17,14 +17,30 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 세션 테스트 컨트롤러
- * Normal 세션(Spring Session)과 Shop 세션(Custom) 동작 확인용
+ * 세션 테스트 컨트롤러 (서브도메인 기반)
+ *
+ * 테스트 방법:
+ * 1. hosts 파일에 추가 (Windows: C:\Windows\System32\drivers\etc\hosts)
+ *    127.0.0.1 localhost
+ *    127.0.0.1 shop.localhost
+ *
+ * 2. A 도메인 (localhost:8082)
+ *    - Normal 세션만 보임
+ *    - Shop 세션 생성 불가
+ *
+ * 3. B 도메인 (shop.localhost:8082)
+ *    - Normal 세션 + Shop 세션 둘 다 보임
+ *    - Shop 세션 생성 가능
+ *
+ * 4. 테스트 시나리오:
+ *    - B에서 Shop 세션 생성 → A로 이동 → Shop 세션 안 보임
+ *    - A에서 B로 이동 → Shop 세션 다시 보임
  */
 @Slf4j
 @RestController
 @RequestMapping("/api/session-test")
 @RequiredArgsConstructor
-@Tag(name = "Session Test", description = "멀티 세션 테스트 API")
+@Tag(name = "Session Test", description = "서브도메인 기반 멀티 세션 테스트 API")
 public class SessionTestController {
 
     private final ShopSessionService shopSessionService;
@@ -82,15 +98,28 @@ public class SessionTestController {
         return ResponseEntity.ok(response);
     }
 
-    // ==================== Shop Session (Custom) ====================
+    // ==================== Shop Session (Custom - 서브도메인 전용) ====================
 
-    @Operation(summary = "Shop 세션 생성", description = "커스텀 Shop 세션 생성")
+    @Operation(summary = "Shop 세션 생성", description = "Shop 도메인(B)에서만 생성 가능. 일반 도메인(A)에서는 거부됨")
     @PostMapping("/shop")
     public ResponseEntity<Map<String, Object>> createShopSession(
             HttpServletRequest request,
             HttpServletResponse response,
             @RequestParam(required = false) String visitorId,
             @RequestParam(required = false) Long dealerId) {
+
+        Map<String, Object> result = new HashMap<>();
+        String host = request.getServerName();
+
+        // Shop 도메인 체크
+        if (!shopSessionService.isShopDomain(request)) {
+            result.put("success", false);
+            result.put("error", "NOT_SHOP_DOMAIN");
+            result.put("message", "Shop 세션은 Shop 도메인에서만 생성할 수 있습니다");
+            result.put("currentHost", host);
+            result.put("hint", "shop.localhost:8082 에서 접근하세요");
+            return ResponseEntity.badRequest().body(result);
+        }
 
         // 기존 세션이 있으면 삭제
         if (shopSessionService.hasShopSession(request)) {
@@ -103,28 +132,43 @@ public class SessionTestController {
                 .checkoutStep(1)
                 .build();
 
-        String sessionId = shopSessionService.createShopSession(response, data);
+        String sessionId = shopSessionService.createShopSession(request, response, data);
 
-        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
         result.put("sessionId", sessionId);
         result.put("visitorId", data.getVisitorId());
         result.put("selectedDealerId", data.getSelectedDealerId());
         result.put("checkoutStep", data.getCheckoutStep());
         result.put("createdAt", data.getCreatedAt());
-        result.put("type", "Shop Session (Custom)");
+        result.put("type", "Shop Session (서브도메인 전용)");
         result.put("redisKey", "shop:session:" + sessionId);
         result.put("cookieName", "SHOP_SESSION_ID");
+        result.put("cookieDomain", host + " (이 도메인에서만 쿠키 전송)");
 
-        log.info("Shop 세션 생성: sessionId={}, visitorId={}", sessionId, data.getVisitorId());
+        log.info("Shop 세션 생성: sessionId={}, visitorId={}, host={}", sessionId, data.getVisitorId(), host);
         return ResponseEntity.ok(result);
     }
 
-    @Operation(summary = "Shop 세션 조회", description = "현재 Shop 세션 정보 조회")
+    @Operation(summary = "Shop 세션 조회", description = "Shop 도메인(B)에서만 세션 조회 가능. 일반 도메인(A)에서는 항상 없음으로 표시")
     @GetMapping("/shop")
     public ResponseEntity<Map<String, Object>> getShopSession(HttpServletRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        String host = request.getServerName();
+        boolean isShopDomain = shopSessionService.isShopDomain(request);
+
+        response.put("currentHost", host);
+        response.put("isShopDomain", isShopDomain);
+
+        if (!isShopDomain) {
+            response.put("exists", false);
+            response.put("message", "Shop 도메인이 아니므로 Shop 세션에 접근할 수 없습니다");
+            response.put("hint", "shop.localhost:8082 에서 접근하세요");
+            response.put("note", "Redis에 세션 데이터가 있어도 이 도메인에서는 쿠키가 전송되지 않습니다");
+            return ResponseEntity.ok(response);
+        }
+
         Optional<ShopSessionData> sessionData = shopSessionService.getShopSession(request);
 
-        Map<String, Object> response = new HashMap<>();
         if (sessionData.isPresent()) {
             ShopSessionData data = sessionData.get();
             response.put("exists", true);
@@ -135,10 +179,10 @@ public class SessionTestController {
             response.put("selectedDealerId", data.getSelectedDealerId());
             response.put("createdAt", data.getCreatedAt());
             response.put("lastAccessedAt", data.getLastAccessedAt());
-            response.put("type", "Shop Session (Custom)");
+            response.put("type", "Shop Session (서브도메인 전용)");
         } else {
             response.put("exists", false);
-            response.put("message", "Shop 세션이 없습니다");
+            response.put("message", "Shop 세션이 없습니다. 먼저 생성하세요.");
         }
 
         return ResponseEntity.ok(response);
@@ -162,7 +206,7 @@ public class SessionTestController {
         return ResponseEntity.ok(result);
     }
 
-    @Operation(summary = "장바구니에 아이템 추가", description = "Shop 세션의 장바구니에 아이템 추가")
+    @Operation(summary = "장바구니에 아이템 추가", description = "Shop 도메인(B)에서만 가능. 세션이 없으면 자동 생성")
     @PostMapping("/shop/cart")
     public ResponseEntity<Map<String, Object>> addToCart(
             HttpServletRequest request,
@@ -171,6 +215,17 @@ public class SessionTestController {
             @RequestParam String productName,
             @RequestParam Integer quantity,
             @RequestParam Long price) {
+
+        Map<String, Object> result = new HashMap<>();
+
+        // Shop 도메인 체크
+        if (!shopSessionService.isShopDomain(request)) {
+            result.put("success", false);
+            result.put("error", "NOT_SHOP_DOMAIN");
+            result.put("message", "장바구니 기능은 Shop 도메인에서만 사용 가능합니다");
+            result.put("hint", "shop.localhost:8082 에서 접근하세요");
+            return ResponseEntity.badRequest().body(result);
+        }
 
         ShopSessionData data = shopSessionService.getOrCreateShopSession(request, response);
 
@@ -184,7 +239,7 @@ public class SessionTestController {
         data.getCart().add(item);
         shopSessionService.updateShopSession(request, data);
 
-        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
         result.put("message", "장바구니에 추가됨");
         result.put("addedItem", item);
         result.put("cartSize", data.getCart().size());
@@ -240,45 +295,76 @@ public class SessionTestController {
         return ResponseEntity.ok(result);
     }
 
-    // ==================== 두 세션 동시 확인 ====================
+    // ==================== 두 세션 동시 확인 (핵심 테스트 API) ====================
 
-    @Operation(summary = "두 세션 동시 확인", description = "Normal 세션과 Shop 세션 상태를 동시에 확인")
+    @Operation(summary = "두 세션 동시 확인", description = "Normal 세션과 Shop 세션 상태를 동시에 확인. 서브도메인에 따라 결과가 다름")
     @GetMapping("/both")
     public ResponseEntity<Map<String, Object>> getBothSessions(
             HttpSession httpSession,
             HttpServletRequest request) {
 
         Map<String, Object> response = new HashMap<>();
+        String host = request.getServerName();
+        boolean isShopDomain = shopSessionService.isShopDomain(request);
 
-        // Normal Session
+        // 현재 도메인 정보
+        response.put("currentHost", host);
+        response.put("isShopDomain", isShopDomain);
+        response.put("domainType", isShopDomain ? "B (Shop 도메인)" : "A (일반 도메인)");
+
+        // Normal Session (모든 도메인에서 동일)
         Map<String, Object> normalSession = new HashMap<>();
         normalSession.put("sessionId", httpSession.getId());
         normalSession.put("username", httpSession.getAttribute("username"));
         normalSession.put("isNew", httpSession.isNew());
         normalSession.put("redisKey", "spring:session:sessions:" + httpSession.getId());
         normalSession.put("cookieName", "JSESSIONID");
+        normalSession.put("cookieDomain", ".localhost (모든 서브도메인에서 공유)");
+        normalSession.put("accessible", true);
         response.put("normalSession", normalSession);
 
-        // Shop Session
+        // Shop Session (Shop 도메인에서만 접근 가능)
         Map<String, Object> shopSession = new HashMap<>();
-        Optional<ShopSessionData> shopData = shopSessionService.getShopSession(request);
-        if (shopData.isPresent()) {
-            ShopSessionData data = shopData.get();
-            shopSession.put("exists", true);
-            shopSession.put("sessionId", shopSessionService.getSessionIdFromCookie(request));
-            shopSession.put("visitorId", data.getVisitorId());
-            shopSession.put("cartItemCount", data.getCart() != null ? data.getCart().size() : 0);
-            shopSession.put("checkoutStep", data.getCheckoutStep());
-            shopSession.put("redisKey", "shop:session:" + shopSessionService.getSessionIdFromCookie(request));
-            shopSession.put("cookieName", "SHOP_SESSION_ID");
+        shopSession.put("isShopDomain", isShopDomain);
+
+        if (isShopDomain) {
+            Optional<ShopSessionData> shopData = shopSessionService.getShopSession(request);
+            if (shopData.isPresent()) {
+                ShopSessionData data = shopData.get();
+                shopSession.put("exists", true);
+                shopSession.put("accessible", true);
+                shopSession.put("sessionId", shopSessionService.getSessionIdFromCookie(request));
+                shopSession.put("visitorId", data.getVisitorId());
+                shopSession.put("cartItemCount", data.getCart() != null ? data.getCart().size() : 0);
+                shopSession.put("checkoutStep", data.getCheckoutStep());
+                shopSession.put("redisKey", "shop:session:" + shopSessionService.getSessionIdFromCookie(request));
+                shopSession.put("cookieName", "SHOP_SESSION_ID");
+                shopSession.put("cookieDomain", host + " (이 도메인에서만 유효)");
+            } else {
+                shopSession.put("exists", false);
+                shopSession.put("accessible", true);
+                shopSession.put("message", "Shop 세션이 없습니다. POST /api/session-test/shop 으로 생성하세요");
+            }
         } else {
             shopSession.put("exists", false);
+            shopSession.put("accessible", false);
+            shopSession.put("message", "일반 도메인(A)에서는 Shop 세션에 접근할 수 없습니다");
+            shopSession.put("note", "shop.localhost:8082 로 이동하면 Shop 세션이 보입니다");
         }
         response.put("shopSession", shopSession);
 
+        // 설명
         response.put("description", Map.of(
-                "normalSession", "Spring Session 관리 (로그인, 권한 등)",
-                "shopSession", "Custom 관리 (장바구니, 결제 등)"
+                "normalSession", "Spring Session - 모든 서브도메인에서 공유 (로그인, 권한 등)",
+                "shopSession", "Custom Session - Shop 도메인(B)에서만 접근 가능 (장바구니, 결제 등)"
+        ));
+
+        // 테스트 가이드
+        response.put("testGuide", Map.of(
+                "step1", "shop.localhost:8082/api/session-test/shop (POST) - Shop 세션 생성",
+                "step2", "shop.localhost:8082/api/session-test/both (GET) - 두 세션 모두 보임",
+                "step3", "localhost:8082/api/session-test/both (GET) - Normal만 보임, Shop 안 보임",
+                "step4", "shop.localhost:8082/api/session-test/both (GET) - 다시 Shop 세션 보임"
         ));
 
         return ResponseEntity.ok(response);

@@ -1,6 +1,7 @@
 package com.example.open.common.exception;
 
 import com.example.open.common.dto.ApiResponse;
+import com.example.open.common.redis.session.ShopSessionInterceptor;
 import com.example.open.common.service.ProfileCheckerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,11 +10,23 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Map;
+
 @RestControllerAdvice
 @RequiredArgsConstructor
 public class GlobalExceptionHandler {
 
     private final ProfileCheckerService profileCheckerService;
+
+    @ExceptionHandler(ShopSessionInterceptor.ShopSessionNotFoundException.class)
+    public ResponseEntity<?> handleShopSessionNotFound(ShopSessionInterceptor.ShopSessionNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of(
+                        "error", "SHOP_SESSION_REQUIRED",
+                        "message", ex.getMessage(),
+                        "hint", "POST /api/session-test/shop 을 호출하여 세션을 생성하세요"
+                ));
+    }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGenericException(Exception ex) {

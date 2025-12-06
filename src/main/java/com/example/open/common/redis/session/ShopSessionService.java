@@ -8,18 +8,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Shop 세션 관리 서비스
- * Redis를 사용하여 커스텀 Shop 세션을 관리
+ * Shop 세션 관리 서비스 (서브도메인 기반)
+ *
+ * - Normal 세션: 모든 도메인에서 공유 (Spring Session - JSESSIONID)
+ * - Shop 세션: 특정 서브도메인(B)에서만 접근 가능 (SHOP_SESSION_ID)
+ *
+ * 동작 방식:
+ * - A 도메인 (example.com): Normal 세션만 보임
+ * - B 도메인 (shop.example.com): Normal + Shop 세션 둘 다 보임
+ * - B → A 이동 시: Shop 세션 쿠키가 전송되지 않음 (도메인 불일치)
+ * - A → B 이동 시: Shop 세션 쿠키가 다시 전송됨
  */
 @Slf4j
 @Service
@@ -48,6 +58,13 @@ public class ShopSessionService {
      */
     private static final int COOKIE_MAX_AGE = 30 * 60;
 
+    /**
+     * Shop 세션이 허용되는 서브도메인 목록
+     * application.yml에서 설정: session.shop.allowed-hosts
+     */
+    @Value("${session.shop.allowed-hosts:shop.localhost}")
+    private String allowedHosts;
+
     private final ObjectMapper objectMapper = createObjectMapper();
 
     private ObjectMapper createObjectMapper() {
@@ -57,13 +74,35 @@ public class ShopSessionService {
     }
 
     /**
+     * 현재 요청이 Shop 세션 허용 도메인인지 확인
+     */
+    public boolean isShopDomain(HttpServletRequest request) {
+        String host = request.getServerName();
+        List<String> allowed = Arrays.asList(allowedHosts.split(","));
+        boolean isAllowed = allowed.stream()
+                .map(String::trim)
+                .anyMatch(h -> h.equalsIgnoreCase(host));
+
+        log.debug("Shop 도메인 체크: host={}, allowed={}, result={}", host, allowedHosts, isAllowed);
+        return isAllowed;
+    }
+
+    /**
      * 새 Shop 세션 생성 및 쿠키 설정
+     * 쿠키는 특정 서브도메인에서만 유효하도록 설정됨
      *
+     * @param request  HttpServletRequest (도메인 확인용)
      * @param response HttpServletResponse
      * @param data     초기 세션 데이터
-     * @return 생성된 세션 ID
+     * @return 생성된 세션 ID, 허용되지 않은 도메인이면 null
      */
-    public String createShopSession(HttpServletResponse response, ShopSessionData data) {
+    public String createShopSession(HttpServletRequest request, HttpServletResponse response, ShopSessionData data) {
+        // Shop 도메인이 아니면 세션 생성하지 않음
+        if (!isShopDomain(request)) {
+            log.warn("Shop 세션 생성 거부: 허용되지 않은 도메인 host={}", request.getServerName());
+            return null;
+        }
+
         String sessionId = UUID.randomUUID().toString();
         String redisKey = SHOP_SESSION_KEY_PREFIX + sessionId;
 
@@ -78,19 +117,32 @@ public class ShopSessionService {
         try {
             String jsonData = objectMapper.writeValueAsString(data);
             redisTemplate.opsForValue().set(redisKey, jsonData, SESSION_TTL);
-            log.info("Shop 세션 생성: sessionId={}, visitorId={}", sessionId, data.getVisitorId());
+            log.info("Shop 세션 생성: sessionId={}, visitorId={}, host={}",
+                    sessionId, data.getVisitorId(), request.getServerName());
         } catch (JsonProcessingException e) {
             log.error("Shop 세션 직렬화 실패", e);
             throw new RuntimeException("Shop 세션 생성 실패", e);
         }
 
+        // 쿠키 도메인을 현재 호스트로 설정 (서브도메인 전용)
         Cookie cookie = new Cookie(SHOP_SESSION_COOKIE_NAME, sessionId);
         cookie.setPath("/");
         cookie.setHttpOnly(true);
         cookie.setMaxAge(COOKIE_MAX_AGE);
+        // Domain 설정하지 않음 → 현재 호스트에서만 유효
+        // 예: shop.localhost에서 생성 → shop.localhost에서만 쿠키 전송
         response.addCookie(cookie);
 
         return sessionId;
+    }
+
+    /**
+     * @deprecated Use {@link #createShopSession(HttpServletRequest, HttpServletResponse, ShopSessionData)} instead
+     */
+    @Deprecated
+    public String createShopSession(HttpServletResponse response, ShopSessionData data) {
+        throw new UnsupportedOperationException(
+                "이 메서드는 더 이상 사용되지 않습니다. createShopSession(request, response, data)를 사용하세요.");
     }
 
     /**
@@ -245,13 +297,19 @@ public class ShopSessionService {
     }
 
     /**
-     * 세션이 없으면 생성, 있으면 조회
+     * 세션이 없으면 생성, 있으면 조회 (Shop 도메인에서만)
      *
      * @param request  HttpServletRequest
      * @param response HttpServletResponse
-     * @return Shop 세션 데이터
+     * @return Shop 세션 데이터, Shop 도메인이 아니면 null
      */
     public ShopSessionData getOrCreateShopSession(HttpServletRequest request, HttpServletResponse response) {
+        // Shop 도메인이 아니면 null 반환
+        if (!isShopDomain(request)) {
+            log.debug("Shop 도메인이 아님 - 세션 생성/조회 건너뜀: host={}", request.getServerName());
+            return null;
+        }
+
         Optional<ShopSessionData> existing = getShopSession(request);
         if (existing.isPresent()) {
             refreshTTL(request);
@@ -259,7 +317,14 @@ public class ShopSessionService {
         }
 
         ShopSessionData newData = ShopSessionData.builder().build();
-        createShopSession(response, newData);
+        createShopSession(request, response, newData);
         return newData;
+    }
+
+    /**
+     * Shop 세션 쿠키 이름 반환
+     */
+    public static String getShopSessionCookieName() {
+        return SHOP_SESSION_COOKIE_NAME;
     }
 }

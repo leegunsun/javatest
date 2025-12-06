@@ -54,6 +54,25 @@ server:
       cookie:
         name: JSESSIONID
 
+# ===========================================
+# 멀티 세션 설정 (서브도메인 기반)
+# ===========================================
+# 테스트 방법:
+# 1. hosts 파일에 추가 (Windows: C:\Windows\System32\drivers\etc\hosts)
+#    127.0.0.1 localhost
+#    127.0.0.1 shop.localhost
+#
+# 2. A 도메인: http://localhost:8082 (Normal 세션만)
+# 3. B 도메인: http://shop.localhost:8082 (Normal + Shop 세션)
+# ===========================================
+session:
+  # Normal 세션 쿠키 도메인 (.으로 시작하면 모든 서브도메인에서 공유)
+  normal:
+    cookie-domain: .localhost
+  # Shop 세션이 허용되는 호스트 목록 (쉼표로 구분)
+  shop:
+    allowed-hosts: shop.localhost
+
 springdoc:
   swagger-ui:
     enabled: false
