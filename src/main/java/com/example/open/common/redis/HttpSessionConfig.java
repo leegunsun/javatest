@@ -13,22 +13,19 @@ import org.springframework.session.web.http.DefaultCookieSerializer;
  * 세션 구조:
  * 1. Normal 세션 (Spring Session)
  *    - 쿠키: JSESSIONID
- *    - 도메인: .localhost (모든 서브도메인에서 공유)
+ *    - 도메인: 설정에 따라 다름 (localhost 환경에서는 도메인 생략)
  *    - Redis 키: spring:session:sessions:{id}
- *    - 사용: A 도메인, B 도메인 모두에서 접근 가능
+ *    - 사용: 설정된 도메인에서 접근 가능
  *
  * 2. Shop 세션 (Custom - ShopSessionService)
  *    - 쿠키: SHOP_SESSION_ID
- *    - 도메인: shop.localhost (특정 서브도메인에서만)
+ *    - 도메인: 특정 서브도메인에서만
  *    - Redis 키: shop:session:{id}
  *    - 사용: B 도메인에서만 접근 가능
  *
- * 테스트 방법:
- * - hosts 파일에 추가:
- *   127.0.0.1 localhost
- *   127.0.0.1 shop.localhost
- * - A 도메인: http://localhost:8082
- * - B 도메인: http://shop.localhost:8082
+ * 주의: localhost는 TLD가 없어서 .localhost 형태의 쿠키 도메인이 허용되지 않습니다.
+ * - 로컬 테스트: cookie-domain을 비워두거나 localhost로 설정
+ * - 운영 환경: .example.com 형태로 설정 (서브도메인 공유)
  */
 @Configuration
 @EnableRedisHttpSession(
@@ -39,15 +36,14 @@ public class HttpSessionConfig {
 
     /**
      * Normal 세션 쿠키 도메인 설정
-     * 앞에 점(.)을 붙이면 모든 서브도메인에서 공유됨
-     * 예: .localhost → localhost, shop.localhost 모두에서 접근 가능
+     * - 빈 문자열 또는 미설정: 현재 호스트에서만 유효 (localhost 환경용)
+     * - .example.com: 모든 서브도메인에서 공유 (운영 환경용)
      */
-    @Value("${session.normal.cookie-domain:.localhost}")
+    @Value("${session.normal.cookie-domain:}")
     private String normalSessionCookieDomain;
 
     /**
      * Normal 세션용 쿠키 직렬화 설정
-     * JSESSIONID 쿠키는 모든 서브도메인에서 공유됨
      */
     @Bean
     public CookieSerializer cookieSerializer() {
@@ -56,8 +52,13 @@ public class HttpSessionConfig {
         serializer.setCookiePath("/");
         serializer.setUseHttpOnlyCookie(true);
         serializer.setSameSite("Lax");
-        // 도메인 설정: 모든 서브도메인에서 공유
-        serializer.setDomainName(normalSessionCookieDomain);
+
+        // 도메인 설정: 빈 문자열이 아닌 경우에만 설정
+        // localhost 환경에서는 도메인을 설정하지 않음 (TLD 없음 문제 회피)
+        if (normalSessionCookieDomain != null && !normalSessionCookieDomain.isBlank()) {
+            serializer.setDomainName(normalSessionCookieDomain);
+        }
+
         return serializer;
     }
 }

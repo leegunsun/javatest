@@ -17,6 +17,7 @@ spring:
   session:
     store-type: redis
   redis:
+    enabled: true
     host: localhost
     port: 6379
     timeout: 60000
@@ -64,13 +65,18 @@ server:
 #
 # 2. A 도메인: http://localhost:8082 (Normal 세션만)
 # 3. B 도메인: http://shop.localhost:8082 (Normal + Shop 세션)
+#
+# 주의: localhost는 TLD가 없어서 .localhost 쿠키 도메인이 허용되지 않습니다.
+# - 로컬 테스트: cookie-domain을 비워둠 (각 호스트별로 별도 세션)
+# - 운영 환경: .example.com 형태로 설정
 # ===========================================
 session:
-  # Normal 세션 쿠키 도메인 (.으로 시작하면 모든 서브도메인에서 공유)
   normal:
-    cookie-domain: .localhost
-  # Shop 세션이 허용되는 호스트 목록 (쉼표로 구분)
+    # localhost 환경: 비워둠 (각 호스트별 별도 세션)
+    # 운영 환경: .example.com (서브도메인 공유)
+    cookie-domain: ""
   shop:
+    # Shop 세션이 허용되는 호스트 목록 (쉼표로 구분)
     allowed-hosts: shop.localhost
 
 springdoc:
