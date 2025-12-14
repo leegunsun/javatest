@@ -1,0 +1,520 @@
+# ============================================================================
+# ConfigMap - 로컬 테스트용 애플리케이션 설정
+# ============================================================================
+#
+# ConfigMap이란?
+# - 애플리케이션 설정 데이터를 저장하는 Kubernetes 리소스
+# - Key-Value 형태로 데이터 저장
+# - 컨테이너 이미지와 설정을 분리하여 재사용성 향상
+#
+# ConfigMap vs Secret:
+# - ConfigMap: 민감하지 않은 설정 데이터 (URL, 포트, 플래그 등)
+# - Secret: 민감한 데이터 (비밀번호, API 키, 인증서 등)
+#
+# 왜 ConfigMap을 사용하나요?
+# 1. 이미지 재사용: 같은 이미지를 여러 환경(dev, test, prod)에서 사용
+# 2. 설정 변경 용이: 이미지 재빌드 없이 설정만 변경 가능
+# 3. 중앙 관리: 설정을 한 곳에서 관리
+# 4. 버전 관리: kubectl로 설정 변경 이력 추적
+#
+# ============================================================================
+
+apiVersion: v1        # ConfigMap API 버전
+kind: ConfigMap       # 리소스 타입
+
+# ============================================================================
+# 메타데이터 (Metadata)
+# ============================================================================
+
+metadata:
+  # ConfigMap 이름
+  # Pod에서 이 이름으로 참조
+  name: open-green-config
+
+  namespace: default
+
+  # 레이블
+  labels:
+    app: open-green
+    environment: local
+    config-type: application
+
+  annotations:
+    description: "로컬 테스트용 Spring Boot 애플리케이션 설정"
+
+# ============================================================================
+# 데이터 (Data)
+# ============================================================================
+# Key-Value 형태로 설정 저장
+# 모든 값은 문자열로 저장됨
+#
+# 사용 방법:
+# 1. 환경 변수로 주입 (envFrom, env)
+# 2. 파일로 마운트 (volumeMount)
+# 3. 명령줄 인자로 전달
+# ============================================================================
+
+data:
+  # --------------------------------------------------------------------------
+  # Spring Boot 설정
+  # --------------------------------------------------------------------------
+
+  # Spring Profile 설정
+  # - local: 로컬 개발 환경
+  # - dev: 개발 서버 환경
+  # - test: 테스트 환경
+  # - prod: 프로덕션 환경
+  spring.profiles.active: "local"
+
+  # 애플리케이션 이름
+  # Spring Boot가 로깅, 모니터링 등에서 사용
+  spring.application.name: "open-green"
+
+  # --------------------------------------------------------------------------
+  # 서버 설정
+  # --------------------------------------------------------------------------
+
+  # 서버 포트
+  # Deployment의 containerPort와 일치해야 함
+  server.port: "8082"
+
+  # Context Path (기본: /)
+  # 예: /api 설정 시 http://localhost:8082/api로 접근
+  # server.servlet.context-path: "/api"
+
+  # 세션 타임아웃 (초)
+  server.servlet.session.timeout: "1800"
+
+  # --------------------------------------------------------------------------
+  # 데이터베이스 설정
+  # --------------------------------------------------------------------------
+
+  # 데이터베이스 URL
+  # Kind 환경에서는 호스트를 Service 이름으로 지정
+  # 형식: jdbc:mysql://<호스트>:<포트>/<데이터베이스명>
+  database.url: "jdbc:mysql://mysql-service:3306/opengreen"
+
+  # 데이터베이스 드라이버 클래스
+  database.driver: "com.mysql.cj.jdbc.Driver"
+
+  # 데이터베이스 사용자명
+  # 비밀번호는 Secret에 저장 (ConfigMap에 저장 금지)
+  database.username: "root"
+
+  # HikariCP 커넥션 풀 설정
+  database.pool.maximum-pool-size: "10"
+  database.pool.minimum-idle: "5"
+  database.pool.connection-timeout: "30000"
+
+  # --------------------------------------------------------------------------
+  # JPA/Hibernate 설정
+  # --------------------------------------------------------------------------
+
+  # DDL 자동 생성 전략
+  # - none: 아무것도 하지 않음 (프로덕션 권장)
+  # - validate: 스키마 검증만 수행
+  # - update: 스키마 자동 업데이트
+  # - create: 기존 테이블 삭제 후 재생성
+  # - create-drop: 애플리케이션 종료 시 테이블 삭제
+  jpa.hibernate.ddl-auto: "update"
+
+  # SQL 로그 출력 여부 (개발 환경에서만 true)
+  jpa.show-sql: "true"
+
+  # SQL 포맷팅 (가독성 향상)
+  jpa.properties.hibernate.format_sql: "true"
+
+  # Hibernate 방언 (데이터베이스 종류)
+  jpa.properties.hibernate.dialect: "org.hibernate.dialect.MySQL8Dialect"
+
+  # --------------------------------------------------------------------------
+  # Redis 설정
+  # --------------------------------------------------------------------------
+
+  # Redis 호스트
+  # Kind 환경에서는 Service 이름 사용
+  redis.host: "redis-service"
+
+  # Redis 포트
+  redis.port: "6379"
+
+  # Redis 데이터베이스 번호 (0-15)
+  redis.database: "0"
+
+  # Redis 타임아웃 (밀리초)
+  redis.timeout: "2000"
+
+  # --------------------------------------------------------------------------
+  # 로깅 설정
+  # --------------------------------------------------------------------------
+
+  # 루트 로그 레벨
+  # TRACE, DEBUG, INFO, WARN, ERROR
+  logging.level.root: "INFO"
+
+  # 애플리케이션 로그 레벨 (패키지별 설정)
+  logging.level.com.example.opengreen: "DEBUG"
+
+  # Spring Framework 로그 레벨
+  logging.level.org.springframework: "INFO"
+
+  # Hibernate SQL 로그 레벨
+  logging.level.org.hibernate.SQL: "DEBUG"
+  logging.level.org.hibernate.type.descriptor.sql.BasicBinder: "TRACE"
+
+  # 로그 패턴 (콘솔 출력)
+  logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+  # --------------------------------------------------------------------------
+  # Actuator 설정 (모니터링 및 관리)
+  # --------------------------------------------------------------------------
+
+  # Actuator 엔드포인트 노출
+  # 콤마로 구분하여 여러 개 지정 가능
+  # "*" = 모든 엔드포인트 노출 (프로덕션에서는 특정 엔드포인트만 노출 권장)
+  management.endpoints.web.exposure.include: "health,info,metrics,prometheus"
+
+  # Health 엔드포인트 상세 정보 표시
+  # - never: 상세 정보 숨김
+  # - when-authorized: 인증된 사용자만 표시
+  # - always: 항상 표시 (로컬 테스트 환경)
+  management.endpoint.health.show-details: "always"
+
+  # Actuator Base Path (기본: /actuator)
+  # 예: /manage 설정 시 http://localhost:8082/manage/health
+  management.endpoints.web.base-path: "/actuator"
+
+  # --------------------------------------------------------------------------
+  # 보안 설정 (선택사항)
+  # --------------------------------------------------------------------------
+
+  # CORS 허용 Origin
+  # 로컬 테스트: "*" (모든 Origin 허용)
+  # 프로덕션: 특정 도메인만 허용
+  cors.allowed-origins: "*"
+
+  # CORS 허용 메서드
+  cors.allowed-methods: "GET,POST,PUT,DELETE,PATCH,OPTIONS"
+
+  # CORS 허용 헤더
+  cors.allowed-headers: "*"
+
+  # --------------------------------------------------------------------------
+  # 파일 업로드 설정
+  # --------------------------------------------------------------------------
+
+  # 파일 업로드 활성화
+  spring.servlet.multipart.enabled: "true"
+
+  # 최대 파일 크기 (MB)
+  spring.servlet.multipart.max-file-size: "10MB"
+
+  # 최대 요청 크기 (MB)
+  spring.servlet.multipart.max-request-size: "10MB"
+
+  # --------------------------------------------------------------------------
+  # 커스텀 애플리케이션 설정
+  # --------------------------------------------------------------------------
+
+  # 애플리케이션 버전 (참고용)
+  app.version: "1.0.0-local"
+
+  # 기능 플래그 (Feature Flags)
+  app.features.email-enabled: "false"
+  app.features.cache-enabled: "true"
+  app.features.async-processing: "true"
+
+  # 외부 API 엔드포인트
+  app.api.external-service-url: "http://external-api-service:8080"
+
+# ============================================================================
+# 파일 형태 데이터 (binaryData)
+# ============================================================================
+# 파일을 ConfigMap에 포함시킬 때 사용
+# 주로 설정 파일을 Volume으로 마운트할 때 사용
+#
+# 예시: application.yml 파일을 ConfigMap에 포함
+# ============================================================================
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+
+metadata:
+  name: open-green-config-files
+  namespace: default
+  labels:
+    app: open-green
+    config-type: files
+
+# 파일 형태의 데이터
+# Key: 파일명, Value: 파일 내용
+data:
+  # Spring Boot application.yml 파일
+  application.yml: |
+    spring:
+      application:
+        name: open-green
+      profiles:
+        active: local
+      datasource:
+        url: jdbc:mysql://mysql-service:3306/opengreen
+        username: root
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        hikari:
+          maximum-pool-size: 10
+          minimum-idle: 5
+      jpa:
+        hibernate:
+          ddl-auto: update
+        show-sql: true
+        properties:
+          hibernate:
+            format_sql: true
+            dialect: org.hibernate.dialect.MySQL8Dialect
+      redis:
+        host: redis-service
+        port: 6379
+        database: 0
+
+    server:
+      port: 8082
+
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics,prometheus
+      endpoint:
+        health:
+          show-details: always
+
+    logging:
+      level:
+        root: INFO
+        com.example.opengreen: DEBUG
+
+  # Logback 설정 파일 예시
+  logback-spring.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <configuration>
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss} - %msg%n</pattern>
+            </encoder>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </configuration>
+
+# ============================================================================
+# Pod에서 ConfigMap 사용 방법
+# ============================================================================
+
+---
+
+# 방법 1: 모든 데이터를 환경 변수로 주입 (envFrom)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-envfrom
+spec:
+  containers:
+    - name: app
+      image: open-green:local-test
+      # ConfigMap의 모든 Key를 환경 변수로 주입
+      # Key 이름이 그대로 환경 변수 이름이 됨
+      envFrom:
+        - configMapRef:
+            name: open-green-config
+      # 환경 변수 사용 예:
+      # ${spring.profiles.active}, ${server.port} 등
+
+---
+
+# 방법 2: 특정 데이터만 환경 변수로 주입 (env)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-env
+spec:
+  containers:
+    - name: app
+      image: open-green:local-test
+      env:
+        # ConfigMap의 특정 Key를 특정 환경 변수로 매핑
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: open-green-config
+              key: spring.profiles.active
+
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: open-green-config
+              key: server.port
+
+---
+
+# 방법 3: 파일로 마운트 (Volume)
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-volume
+spec:
+  containers:
+    - name: app
+      image: open-green:local-test
+      # 마운트할 경로 지정
+      volumeMounts:
+        - name: config-volume
+          mountPath: /app/config  # 컨테이너 내부 경로
+          readOnly: true
+
+  # Volume 정의
+  volumes:
+    - name: config-volume
+      configMap:
+        name: open-green-config-files
+        # 특정 파일만 선택 (선택사항)
+        items:
+          - key: application.yml
+            path: application.yml  # 파일명 지정
+          - key: logback-spring.xml
+            path: logback-spring.xml
+
+# 파일 접근 예:
+# /app/config/application.yml
+# /app/config/logback-spring.xml
+
+# ============================================================================
+# 관리 명령어
+# ============================================================================
+#
+# 1. ConfigMap 생성:
+#    kubectl apply -f configmap-local.yaml
+#
+# 2. ConfigMap 확인:
+#    kubectl get configmap
+#    kubectl get cm
+#
+# 3. ConfigMap 상세 정보:
+#    kubectl describe configmap open-green-config
+#
+# 4. ConfigMap 데이터 확인:
+#    kubectl get configmap open-green-config -o yaml
+#    kubectl get configmap open-green-config -o json
+#
+# 5. 파일에서 ConfigMap 생성 (명령어 방식):
+#    kubectl create configmap open-green-config \
+#      --from-file=application.yml \
+#      --from-literal=server.port=8082
+#
+# 6. ConfigMap 수정:
+#    kubectl edit configmap open-green-config
+#
+# 7. ConfigMap 삭제:
+#    kubectl delete configmap open-green-config
+#
+# 8. ConfigMap 변경 적용 (Pod 재시작 필요):
+#    kubectl rollout restart deployment/open-green-local
+#
+# ============================================================================
+
+# ============================================================================
+# ConfigMap 업데이트 및 반영
+# ============================================================================
+#
+# ConfigMap을 수정하면 어떻게 되나요?
+#
+# 1. 환경 변수로 주입된 경우 (envFrom, env):
+#    - Pod가 재시작되기 전까지 변경 사항이 반영되지 않음
+#    - Deployment를 롤링 재시작해야 함:
+#      kubectl rollout restart deployment/open-green-local
+#
+# 2. Volume으로 마운트된 경우:
+#    - 자동으로 반영됨 (약 1분 이내)
+#    - 애플리케이션이 파일 변경을 감지하고 리로드해야 함
+#    - Spring Boot는 기본적으로 자동 리로드하지 않음
+#      (Spring Cloud Config를 사용하면 가능)
+#
+# 권장 사항:
+# - 설정 변경 시 Deployment를 롤링 재시작하여 명확하게 반영
+# - GitOps 방식 사용: Git에서 ConfigMap 관리, 자동 배포
+#
+# ============================================================================
+
+# ============================================================================
+# 트러블슈팅
+# ============================================================================
+#
+# 문제: Pod가 ConfigMap을 찾을 수 없음
+# 해결:
+#   1. ConfigMap 존재 확인: kubectl get configmap
+#   2. 네임스페이스 일치 확인: Pod와 ConfigMap이 같은 네임스페이스
+#   3. 이름 오타 확인
+#
+# 문제: 환경 변수가 주입되지 않음
+# 해결:
+#   1. Pod 환경 변수 확인: kubectl exec <pod> -- env
+#   2. ConfigMap Key 이름 확인 (대소문자 구분)
+#   3. Pod 재시작 확인
+#
+# 문제: 설정 변경이 반영되지 않음
+# 해결:
+#   1. Deployment 재시작: kubectl rollout restart deployment/...
+#   2. Pod 로그 확인: kubectl logs <pod>
+#   3. ConfigMap 데이터 확인: kubectl get cm <name> -o yaml
+#
+# ============================================================================
+
+# ============================================================================
+# 베스트 프랙티스
+# ============================================================================
+#
+# 1. 환경별 ConfigMap 분리:
+#    - configmap-dev.yaml
+#    - configmap-test.yaml
+#    - configmap-prod.yaml
+#
+# 2. 민감한 데이터는 Secret 사용:
+#    - 비밀번호, API 키, 토큰 등
+#    - ConfigMap은 Base64 인코딩 없이 평문 저장
+#
+# 3. 버전 관리:
+#    - ConfigMap도 Git에서 버전 관리
+#    - 변경 이력 추적 가능
+#
+# 4. 네이밍 컨벤션:
+#    - <앱이름>-<타입>-<환경>
+#    - 예: open-green-config-local
+#
+# 5. 문서화:
+#    - 각 설정의 의미를 주석으로 설명
+#    - 기본값과 허용 범위 명시
+#
+# 6. 불변성 (Immutability):
+#    - Kubernetes 1.19+: immutable: true 설정 가능
+#    - 설정 변경 시 새 ConfigMap 생성
+#    - 롤백 용이
+#
+# ============================================================================
+
+# ============================================================================
+# 학습 체크리스트
+# ============================================================================
+#
+# □ ConfigMap과 Secret의 차이를 이해했나요?
+# □ ConfigMap을 환경 변수로 주입하는 방법을 알고 있나요?
+# □ ConfigMap을 파일로 마운트하는 방법을 알고 있나요?
+# □ ConfigMap 업데이트가 Pod에 반영되는 방식을 이해했나요?
+# □ envFrom과 env의 차이를 알고 있나요?
+# □ ConfigMap에 파일을 포함시키는 방법을 알고 있나요?
+# □ kubectl로 ConfigMap을 생성/수정하는 방법을 알고 있나요?
+# □ ConfigMap 사용 시 보안 고려사항을 이해했나요?
+#
+# ============================================================================

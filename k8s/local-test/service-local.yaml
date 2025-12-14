@@ -1,0 +1,431 @@
+# ============================================================================
+# Service - 로컬 테스트용 네트워크 서비스 설정
+# ============================================================================
+#
+# Service란?
+# - Pod들에 대한 안정적인 네트워크 엔드포인트 제공
+# - Pod는 생성/삭제될 때마다 IP가 변경되지만, Service IP는 고정됨
+# - 여러 Pod에 트래픽을 로드 밸런싱
+# - DNS 이름으로 서비스 검색 가능
+#
+# 왜 Service가 필요한가요?
+# 1. Pod IP는 동적이라 직접 사용하기 어려움
+# 2. 여러 Pod 복제본이 있을 때 자동 로드 밸런싱
+# 3. 서비스 디스커버리: 이름으로 다른 서비스 찾기
+# 4. 외부 노출: 클러스터 외부에서 접근 가능
+#
+# Service 타입:
+# - ClusterIP: 클러스터 내부에서만 접근 (기본값)
+# - NodePort: 노드의 특정 포트로 외부 노출
+# - LoadBalancer: 클라우드 로드밸런서 생성
+# - ExternalName: 외부 DNS 이름으로 매핑
+#
+# ============================================================================
+
+apiVersion: v1     # Service API 버전
+kind: Service      # 리소스 타입
+
+# ============================================================================
+# 메타데이터 (Metadata)
+# ============================================================================
+
+metadata:
+  # Service 이름
+  # 이 이름이 클러스터 내부 DNS 이름이 됨
+  # 예: open-green-service.default.svc.cluster.local
+  name: open-green-service
+
+  # 네임스페이스
+  namespace: default
+
+  # 레이블
+  labels:
+    app: open-green
+    environment: local
+    tier: backend
+
+  # 어노테이션
+  annotations:
+    description: "로컬 테스트용 Spring Boot 서비스"
+    # 프로메테우스 모니터링 설정
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8082"
+
+# ============================================================================
+# 스펙 (Spec) - Service 설정
+# ============================================================================
+
+spec:
+  # --------------------------------------------------------------------------
+  # Service 타입
+  # --------------------------------------------------------------------------
+  # ClusterIP (기본값):
+  # - 클러스터 내부에서만 접근 가능
+  # - 가장 일반적인 타입
+  # - Ingress와 함께 사용하여 외부 노출
+  #
+  # NodePort:
+  # - 모든 노드의 특정 포트로 서비스 노출
+  # - 외부에서 <NodeIP>:<NodePort>로 접근
+  # - 포트 범위: 30000-32767
+  # - 테스트 환경에서 간단한 외부 접근용으로 유용
+  #
+  # LoadBalancer:
+  # - 클라우드 환경에서 외부 로드밸런서 자동 생성
+  # - Kind에서는 지원하지 않음 (MetalLB 등 추가 설치 필요)
+  #
+  # ExternalName:
+  # - 외부 DNS를 클러스터 내부 서비스처럼 사용
+  # - 예: 외부 데이터베이스를 내부 서비스처럼 접근
+  # --------------------------------------------------------------------------
+  type: ClusterIP
+
+  # --------------------------------------------------------------------------
+  # ClusterIP 설정
+  # --------------------------------------------------------------------------
+  # Service가 사용할 클러스터 내부 IP
+  #
+  # 값:
+  # - 생략 (권장): 자동으로 IP 할당
+  # - "None": Headless Service (로드 밸런싱 없음, Pod IP 직접 반환)
+  # - 특정 IP: 수동으로 IP 지정 (비권장)
+  #
+  # Headless Service 사용 시나리오:
+  # - StatefulSet과 함께 사용 (각 Pod에 고유한 DNS 이름)
+  # - 클라이언트가 직접 로드 밸런싱 구현
+  # - 서비스 디스커버리만 필요한 경우
+  # --------------------------------------------------------------------------
+  # clusterIP: None  # Headless Service 예시
+
+  # --------------------------------------------------------------------------
+  # 셀렉터 (Selector)
+  # --------------------------------------------------------------------------
+  # 이 Service가 트래픽을 전달할 Pod를 선택하는 기준
+  # Deployment의 Pod 레이블과 일치해야 함
+  #
+  # 동작 방식:
+  # 1. Service는 셀렉터와 일치하는 모든 Pod를 자동으로 발견
+  # 2. 발견된 Pod들의 IP를 Endpoints에 등록
+  # 3. Service로 들어오는 트래픽을 Endpoints의 Pod들로 로드 밸런싱
+  #
+  # 확인 방법:
+  # kubectl get endpoints open-green-service
+  # --------------------------------------------------------------------------
+  selector:
+    app: open-green
+    environment: local
+
+  # --------------------------------------------------------------------------
+  # 포트 설정
+  # --------------------------------------------------------------------------
+  # Service가 노출할 포트 목록
+  # 하나의 Service에서 여러 포트를 노출할 수 있음
+  # --------------------------------------------------------------------------
+  ports:
+    # HTTP 트래픽용 포트
+    - name: http              # 포트 이름 (여러 포트 사용 시 필수)
+      protocol: TCP           # 프로토콜 (TCP, UDP, SCTP)
+
+      # Service가 수신할 포트 (클라이언트가 접속하는 포트)
+      # 클러스터 내부에서 open-green-service:8080으로 접속
+      port: 8080
+
+      # Pod의 실제 포트 (컨테이너가 리스닝하는 포트)
+      # Deployment에서 containerPort: 8082와 일치
+      targetPort: 8082
+
+      # NodePort 타입 사용 시 노드에서 노출할 포트 (선택사항)
+      # 지정하지 않으면 30000-32767 범위에서 자동 할당
+      # nodePort: 30080
+
+    # 관리용 포트 (Actuator) - 선택사항
+    - name: management
+      protocol: TCP
+      port: 8082              # Service 포트
+      targetPort: 8082        # Pod 포트
+
+  # --------------------------------------------------------------------------
+  # 세션 어피니티 (Session Affinity)
+  # --------------------------------------------------------------------------
+  # 동일한 클라이언트의 요청을 항상 같은 Pod로 라우팅
+  #
+  # None (기본값): 라운드 로빈 방식으로 로드 밸런싱
+  # ClientIP: 클라이언트 IP 기반 세션 유지
+  #
+  # 사용 시나리오:
+  # - Stateful 애플리케이션 (세션 저장소 없을 때)
+  # - WebSocket 연결 유지
+  # - 파일 업로드/다운로드 중 연결 유지
+  #
+  # 권장 사항:
+  # - 가능하면 애플리케이션을 Stateless로 설계
+  # - Redis 등 외부 세션 저장소 사용
+  # - 로드 밸런싱 효율을 위해 None 사용 권장
+  # --------------------------------------------------------------------------
+  sessionAffinity: None
+
+  # SessionAffinity가 ClientIP일 때의 추가 설정
+  # sessionAffinityConfig:
+  #   clientIP:
+  #     # 세션 유지 시간 (초)
+  #     # 이 시간 동안 같은 클라이언트는 같은 Pod로 라우팅
+  #     timeoutSeconds: 10800  # 3시간
+
+  # --------------------------------------------------------------------------
+  # IP 패밀리 설정 (IPv4/IPv6)
+  # --------------------------------------------------------------------------
+  # 사용할 IP 프로토콜 지정
+  #
+  # IPv4: IPv4만 사용 (기본값)
+  # IPv6: IPv6만 사용
+  # 둘 다 지정: 듀얼 스택
+  # --------------------------------------------------------------------------
+  ipFamilies:
+    - IPv4
+
+  # ipFamilyPolicy: SingleStack  # SingleStack, PreferDualStack, RequireDualStack
+
+  # --------------------------------------------------------------------------
+  # 외부 트래픽 정책 (External Traffic Policy)
+  # --------------------------------------------------------------------------
+  # NodePort 또는 LoadBalancer 타입 사용 시 적용
+  #
+  # Cluster (기본값):
+  # - 외부 트래픽을 모든 노드의 Pod로 로드 밸런싱
+  # - 트래픽이 다른 노드의 Pod로 전달될 수 있음 (추가 홉)
+  # - 클라이언트 IP 손실 (SNAT)
+  #
+  # Local:
+  # - 트래픽을 받은 노드의 Pod로만 라우팅
+  # - 클라이언트 IP 보존
+  # - 로드 밸런싱 불균형 가능 (노드별 Pod 수 다를 때)
+  #
+  # 사용 시나리오:
+  # - 클라이언트 IP가 중요한 경우 (로깅, 보안): Local
+  # - 균등한 로드 밸런싱이 중요한 경우: Cluster
+  # --------------------------------------------------------------------------
+  # externalTrafficPolicy: Cluster
+
+  # --------------------------------------------------------------------------
+  # Health Check Node Port (LoadBalancer 타입 전용)
+  # --------------------------------------------------------------------------
+  # LoadBalancer의 헬스 체크용 NodePort
+  # externalTrafficPolicy: Local일 때 자동 생성됨
+  # --------------------------------------------------------------------------
+  # healthCheckNodePort: 30000
+
+---
+
+# ============================================================================
+# Service - NodePort 타입 예시 (테스트용)
+# ============================================================================
+#
+# 로컬 테스트 시 Ingress 없이 직접 접근하고 싶을 때 사용
+# Kind 환경에서는 extraPortMappings 설정과 함께 사용
+#
+# ============================================================================
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: open-green-nodeport
+  namespace: default
+  labels:
+    app: open-green
+    environment: local
+    service-type: nodeport
+  annotations:
+    description: "NodePort 타입 서비스 - 외부 직접 접근용"
+
+spec:
+  # NodePort 타입: 노드의 특정 포트로 외부 노출
+  type: NodePort
+
+  selector:
+    app: open-green
+    environment: local
+
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080           # Service 내부 포트
+      targetPort: 8082     # Pod 포트
+
+      # NodePort: 노드에서 노출할 포트
+      # 30000-32767 범위 내에서 지정
+      # Kind 설정 파일의 extraPortMappings와 일치해야 함
+      nodePort: 30080
+
+  # NodePort에서는 externalTrafficPolicy 설정 가능
+  externalTrafficPolicy: Cluster
+
+---
+
+# ============================================================================
+# Service - Headless 타입 예시 (StatefulSet용)
+# ============================================================================
+#
+# Headless Service는 ClusterIP가 없음 (None)
+# 각 Pod에 직접 DNS 이름 부여
+#
+# 사용 시나리오:
+# - StatefulSet과 함께 사용 (각 Pod 고유 식별)
+# - 데이터베이스 클러스터 (Master-Slave 구조)
+# - 클라이언트가 직접 Pod 선택 (Kafka, Elasticsearch 등)
+#
+# ============================================================================
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: open-green-headless
+  namespace: default
+  labels:
+    app: open-green
+    environment: local
+    service-type: headless
+
+spec:
+  # ClusterIP를 None으로 설정 -> Headless Service
+  clusterIP: None
+
+  selector:
+    app: open-green
+    environment: local
+
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8082
+      targetPort: 8082
+
+  # Headless Service에서는 sessionAffinity 무의미
+  # 클라이언트가 직접 Pod IP를 받기 때문
+
+# ============================================================================
+# DNS 이름 규칙
+# ============================================================================
+#
+# Service의 DNS 이름은 다음 형식을 따름:
+#
+# 1. 기본 형식:
+#    <서비스명>.<네임스페이스>.svc.cluster.local
+#
+#    예: open-green-service.default.svc.cluster.local
+#
+# 2. 같은 네임스페이스 내에서는 짧은 이름 사용 가능:
+#    <서비스명>
+#
+#    예: open-green-service
+#
+# 3. 다른 네임스페이스에서 접근:
+#    <서비스명>.<네임스페이스>
+#
+#    예: open-green-service.production
+#
+# 4. Headless Service의 Pod DNS:
+#    <Pod명>.<서비스명>.<네임스페이스>.svc.cluster.local
+#
+#    예: open-green-0.open-green-headless.default.svc.cluster.local
+#
+# ============================================================================
+
+# ============================================================================
+# 서비스 검색 (Service Discovery) 방법
+# ============================================================================
+#
+# 1. DNS를 통한 검색 (권장):
+#    curl http://open-green-service:8080
+#
+# 2. 환경 변수를 통한 검색:
+#    Kubernetes는 자동으로 환경 변수 주입
+#    OPEN_GREEN_SERVICE_SERVICE_HOST=10.96.1.1
+#    OPEN_GREEN_SERVICE_SERVICE_PORT=8080
+#
+#    사용 예: $OPEN_GREEN_SERVICE_SERVICE_HOST:$OPEN_GREEN_SERVICE_SERVICE_PORT
+#
+# 3. Endpoints API 직접 조회:
+#    kubectl get endpoints open-green-service -o json
+#
+# ============================================================================
+
+# ============================================================================
+# 관리 명령어
+# ============================================================================
+#
+# 1. Service 생성:
+#    kubectl apply -f service-local.yaml
+#
+# 2. Service 확인:
+#    kubectl get service
+#    kubectl get svc -o wide
+#
+# 3. Service 상세 정보:
+#    kubectl describe service open-green-service
+#
+# 4. Endpoints 확인 (Service가 선택한 Pod IP 목록):
+#    kubectl get endpoints open-green-service
+#
+# 5. Service DNS 테스트 (Pod 내부에서):
+#    kubectl run -it --rm debug --image=busybox --restart=Never -- sh
+#    nslookup open-green-service
+#    wget -O- http://open-green-service:8080
+#
+# 6. Service를 통한 접속 테스트:
+#    kubectl port-forward service/open-green-service 8080:8080
+#    (다른 터미널에서) curl http://localhost:8080
+#
+# 7. NodePort 접속 테스트:
+#    curl http://localhost:30080
+#
+# 8. Service 로그 확인 (실제 Pod 로그):
+#    kubectl logs -l app=open-green --tail=100 -f
+#
+# 9. Service 삭제:
+#    kubectl delete service open-green-service
+#
+# ============================================================================
+
+# ============================================================================
+# 트러블슈팅
+# ============================================================================
+#
+# 문제: Service에 접속 안 됨
+# 해결:
+#   1. Endpoints 확인: kubectl get endpoints open-green-service
+#      - Endpoints가 비어있다면 셀렉터가 Pod 레이블과 불일치
+#   2. Pod 상태 확인: kubectl get pods -l app=open-green
+#      - Pod가 Running 상태인지 확인
+#   3. Pod 레이블 확인: kubectl get pods --show-labels
+#      - Service selector와 일치하는지 확인
+#
+# 문제: DNS 이름으로 접속 안 됨
+# 해결:
+#   1. CoreDNS 상태 확인: kubectl get pods -n kube-system -l k8s-app=kube-dns
+#   2. DNS 쿼리 테스트:
+#      kubectl run -it --rm debug --image=busybox --restart=Never -- nslookup open-green-service
+#
+# 문제: NodePort로 접속 안 됨
+# 해결:
+#   1. NodePort 범위 확인: 30000-32767
+#   2. 방화벽 확인
+#   3. Kind 설정의 extraPortMappings 확인
+#
+# ============================================================================
+
+# ============================================================================
+# 학습 체크리스트
+# ============================================================================
+#
+# □ Service의 역할과 필요성을 이해했나요?
+# □ ClusterIP, NodePort, LoadBalancer의 차이를 알고 있나요?
+# □ Service Selector가 어떻게 Pod를 찾는지 이해했나요?
+# □ port와 targetPort의 차이를 알고 있나요?
+# □ Headless Service의 용도를 이해했나요?
+# □ Service DNS 이름 규칙을 알고 있나요?
+# □ sessionAffinity의 의미와 사용 시나리오를 이해했나요?
+# □ Endpoints가 무엇인지 알고 있나요?
+#
+# ============================================================================
