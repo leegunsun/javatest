@@ -1,0 +1,162 @@
+# AWS 환경 권장 구성 - ALB Ingress Controller 사용
+#
+# 아키텍처 흐름:
+# Route53 → AWS ALB (L7) → Kubernetes Service (NodePort) → Pod
+#
+# 특징:
+# - Ingress 리소스 정의만으로 AWS ALB 자동 생성
+# - Target Group은 Pod IP를 직접 타겟팅 (target-type: ip)
+# - Health Check는 Spring Boot Actuator 활용
+
+---
+# Deployment - Spring Boot 애플리케이션
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app
+  namespace: production
+  labels:
+    app: spring-app
+spec:
+  replicas: 8  # 기존 EC2 2대 × 4 애플리케이션
+  selector:
+    matchLabels:
+      app: spring-app
+  template:
+    metadata:
+      labels:
+        app: spring-app
+    spec:
+      containers:
+        - name: spring-app
+          image: your-registry/spring-app:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          # Spring Boot Actuator Health Check
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "production"
+
+---
+# Service - NodePort (ALB가 타겟팅)
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-app-service
+  namespace: production
+spec:
+  type: NodePort  # ALB Ingress Controller에서 target-type: instance 사용 시
+  selector:
+    app: spring-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+
+---
+# Ingress - AWS ALB 자동 생성
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spring-app-ingress
+  namespace: production
+  annotations:
+    # ALB 기본 설정
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip  # Pod IP 직접 타겟팅 (권장)
+    alb.ingress.kubernetes.io/load-balancer-name: spring-app-alb
+
+    # 포트 및 프로토콜
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+
+    # SSL 인증서 (ACM)
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:123456789:certificate/xxx
+
+    # Health Check (Spring Boot Actuator)
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+
+    # 성능 튜닝
+    alb.ingress.kubernetes.io/target-group-attributes: |
+      stickiness.enabled=true,
+      stickiness.lb_cookie.duration_seconds=3600,
+      deregistration_delay.timeout_seconds=30
+
+    # 보안
+    alb.ingress.kubernetes.io/security-groups: sg-xxxxx
+    alb.ingress.kubernetes.io/wafv2-acl-arn: arn:aws:wafv2:ap-northeast-2:123456789:xxx
+
+    # 태그
+    alb.ingress.kubernetes.io/tags: |
+      Environment=production,
+      Application=spring-app,
+      ManagedBy=kubernetes
+spec:
+  ingressClassName: alb
+  rules:
+    - host: api.yourdomain.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: spring-app-service
+                port:
+                  number: 8080
+
+---
+# HorizontalPodAutoscaler - 자동 스케일링
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: spring-app-hpa
+  namespace: production
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: spring-app
+  minReplicas: 8
+  maxReplicas: 20
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80

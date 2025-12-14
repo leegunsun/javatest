@@ -1,0 +1,78 @@
+# ============================================================================
+# Kind 클러스터 설정 파일
+# ============================================================================
+# 구성: Master(Control Plane) 1대 + Worker 2대
+#
+# 사용법:
+#   kind create cluster --name spring-cluster --config kind-config.yaml
+#
+# 삭제:
+#   kind delete cluster --name spring-cluster
+# ============================================================================
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+# 클러스터 이름은 명령어에서 지정 (--name spring-cluster)
+
+nodes:
+  # =========================================================================
+  # Master Node (Control Plane)
+  # =========================================================================
+  # 역할: API Server, Scheduler, Controller Manager, etcd 실행
+  # 실제 애플리케이션 Pod는 여기서 실행되지 않음 (기본 설정)
+  # =========================================================================
+  - role: control-plane
+
+    # 포트 매핑: 호스트 PC에서 클러스터 내부로 접근하기 위한 설정
+    extraPortMappings:
+      # NodePort 서비스용 (30000-32767 범위 중 일부)
+      - containerPort: 30080    # 클러스터 내부 포트
+        hostPort: 30080         # 호스트 PC 포트
+        protocol: TCP
+      - containerPort: 30443
+        hostPort: 30443
+        protocol: TCP
+      # Spring Boot 앱 접근용 (NodePort 30082)
+      - containerPort: 30082
+        hostPort: 30082
+        protocol: TCP
+
+    # Master Node 레이블 (선택사항)
+    labels:
+      node-type: master
+      environment: local
+
+  # =========================================================================
+  # Worker Node 1
+  # =========================================================================
+  # 역할: 실제 애플리케이션 Pod가 실행되는 노드
+  # =========================================================================
+  - role: worker
+    labels:
+      node-type: worker
+      worker-id: "1"
+      environment: local
+
+  # =========================================================================
+  # Worker Node 2
+  # =========================================================================
+  # 역할: 실제 애플리케이션 Pod가 실행되는 노드
+  # Pod Anti-Affinity 테스트를 위해 2대 구성
+  # =========================================================================
+  - role: worker
+    labels:
+      node-type: worker
+      worker-id: "2"
+      environment: local
+
+# =============================================================================
+# 네트워킹 설정
+# =============================================================================
+networking:
+  # Pod 네트워크 CIDR (기본값 사용)
+  podSubnet: "10.244.0.0/16"
+  # Service 네트워크 CIDR (기본값 사용)
+  serviceSubnet: "10.96.0.0/12"
+  # CNI 비활성화 시 직접 설치 필요 (기본: kindnetd 사용)
+  disableDefaultCNI: false

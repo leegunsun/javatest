@@ -1,0 +1,199 @@
+# ============================================================================
+# nginx-ingress-open-green.yaml - Open Green 프로젝트 Nginx Ingress 설정
+# ============================================================================
+# 이 파일은 기존에 사용하던 Nginx Ingress Controller 설정입니다.
+# AWS ALB Ingress Controller로 전환하면서 examples로 이동되었습니다.
+# ============================================================================
+
+# ============================================================================
+# Ingress Controller 설치 방법 (사전 필수)
+# ============================================================================
+#
+# nginx-ingress-controller 설치 (가장 일반적):
+#
+# Helm 사용:
+#   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+#   helm repo update
+#   helm install nginx-ingress ingress-nginx/ingress-nginx
+#
+# kubectl 사용 (YAML 직접 적용):
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+#
+# 설치 확인:
+#   kubectl get pods -n ingress-nginx
+#   kubectl get svc -n ingress-nginx
+#
+# ============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # name: Ingress 이름
+  name: open-green-ingress
+
+  # namespace: Ingress가 속할 네임스페이스
+  # 라우팅할 Service와 같은 네임스페이스에 있어야 함
+  namespace: default
+
+  # labels: Ingress를 분류하기 위한 레이블
+  labels:
+    app: open-green
+
+  # annotations: Ingress Controller 동작 설정
+  # 사용하는 Ingress Controller에 따라 annotation이 다름
+  annotations:
+    # --------------------------------------------------------------------------
+    # nginx-ingress-controller 전용 annotation
+    # --------------------------------------------------------------------------
+
+    # 사용할 Ingress 클래스 지정 (명시적)
+    # ingressClassName 필드와 중복이지만, 호환성을 위해 둘 다 설정 가능
+    kubernetes.io/ingress.class: "nginx"
+
+    # SSL 리다이렉트: HTTP -> HTTPS 자동 리다이렉트
+    # TLS 설정 시 true로 변경
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+    # 프록시 바디 크기 제한 (파일 업로드 등)
+    # 기본값은 1m, 필요에 따라 증가
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+    # 프록시 타임아웃 설정 (초)
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+
+    # WebSocket 지원 (Spring Boot WebSocket 사용 시)
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri"
+
+spec:
+  # --------------------------------------------------------------------------
+  # ingressClassName: 사용할 Ingress Controller 클래스
+  # --------------------------------------------------------------------------
+  ingressClassName: nginx
+
+  # --------------------------------------------------------------------------
+  # rules: 라우팅 규칙 정의
+  # --------------------------------------------------------------------------
+  rules:
+    # ========================================================================
+    # 규칙 1: 메인 도메인 라우팅
+    # ========================================================================
+    - host: open-green.example.com  # 실제 도메인으로 변경 필요
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+    # ========================================================================
+    # 규칙 2: API 전용 서브도메인 (선택적)
+    # ========================================================================
+    - host: api.open-green.example.com  # API 전용 도메인
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+---
+# ============================================================================
+# 다중 서비스 라우팅 예시 (경로 기반)
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open-green-ingress-multi-path
+  namespace: default
+  labels:
+    app: open-green
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: open-green.example.com
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+---
+# ============================================================================
+# HTTPS Ingress 예시 (TLS 설정)
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open-green-ingress-tls
+  namespace: default
+  labels:
+    app: open-green
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - open-green.example.com
+      secretName: open-green-tls-secret
+  rules:
+    - host: open-green.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+---
+# ============================================================================
+# 로컬 개발용 Ingress (minikube, Docker Desktop)
+# ============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open-green-ingress-local
+  namespace: default
+  labels:
+    app: open-green
+    environment: local
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: open-green.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
