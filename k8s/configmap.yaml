@@ -1,0 +1,250 @@
+# ============================================================================
+# configmap.yaml - Kubernetes ConfigMap 리소스
+# ============================================================================
+#
+# ConfigMap이란?
+# - 비밀이 아닌(non-confidential) 설정 데이터를 저장하는 리소스
+# - 키-값 쌍 형태로 설정 저장
+# - Pod에서 환경변수, 명령줄 인자, 볼륨의 파일로 사용 가능
+#
+# ConfigMap vs Secret:
+# - ConfigMap: 비민감 설정 (URL, 포트, 기능 플래그 등)
+# - Secret: 민감 정보 (비밀번호, API 키, 인증서 등)
+#
+# ConfigMap 사용의 이점:
+# 1. 설정과 코드 분리: 이미지를 재빌드하지 않고 설정 변경 가능
+# 2. 환경별 설정: 동일 이미지, 다른 ConfigMap으로 환경 구분
+# 3. 중앙 집중 관리: 여러 Pod이 같은 설정 공유
+# ============================================================================
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # name: ConfigMap 이름
+  # Deployment에서 configMapKeyRef로 참조할 때 이 이름 사용
+  name: open-green-config
+
+  # namespace: ConfigMap이 속할 네임스페이스
+  # 참조하는 Pod과 같은 네임스페이스에 있어야 함
+  namespace: default
+
+  # labels: ConfigMap을 분류하기 위한 레이블
+  labels:
+    app: open-green
+
+# --------------------------------------------------------------------------
+# data: 설정 데이터 (키-값 쌍)
+# --------------------------------------------------------------------------
+# - 모든 값은 문자열이어야 함 (숫자도 따옴표로 감싸야 함)
+# - 바이너리 데이터는 binaryData 필드 사용
+# --------------------------------------------------------------------------
+data:
+  # ==========================================================================
+  # 데이터베이스 설정
+  # ==========================================================================
+  # MySQL Service의 DNS 이름을 사용
+  # 형식: jdbc:mysql://<service-name>:<port>/<database>
+  # 같은 네임스페이스: mysql-service
+  # 다른 네임스페이스: mysql-service.other-namespace.svc.cluster.local
+  # ==========================================================================
+  database-url: "jdbc:mysql://mysql-service:3306/todo"
+
+  # 데이터베이스 연결 풀 설정
+  # 이 값들은 Pod 리소스에 맞게 조정
+  hikari-max-pool-size: "10"
+  hikari-min-idle: "5"
+  hikari-connection-timeout: "30000"
+  hikari-idle-timeout: "600000"
+  hikari-max-lifetime: "1800000"
+
+  # ==========================================================================
+  # Redis 설정
+  # ==========================================================================
+  # Redis Service의 DNS 이름
+  # Redis는 보통 6379 포트 사용
+  # ==========================================================================
+  redis-host: "redis-service"
+  redis-port: "6379"
+  redis-timeout: "60000"
+
+  # Redis 커넥션 풀 설정
+  redis-pool-max-active: "10"
+  redis-pool-max-idle: "8"
+  redis-pool-min-idle: "2"
+  redis-pool-max-wait: "3000"
+
+  # ==========================================================================
+  # Kafka 설정
+  # ==========================================================================
+  # Kafka 브로커 주소
+  # 여러 브로커: kafka-0:9092,kafka-1:9092,kafka-2:9092
+  # ==========================================================================
+  kafka-bootstrap-servers: "kafka-service:9092"
+  kafka-consumer-group-id: "order-group"
+
+  # ==========================================================================
+  # 애플리케이션 설정
+  # ==========================================================================
+  # 서버 포트
+  server-port: "8082"
+
+  # JPA 설정
+  jpa-ddl-auto: "none"
+  hibernate-show-sql: "false"
+
+  # Flyway 설정
+  flyway-enabled: "true"
+
+  # 로깅 레벨
+  log-level-root: "INFO"
+  log-level-app: "INFO"
+  log-level-web: "WARN"
+  log-level-sql: "WARN"
+
+  # Swagger 설정
+  swagger-enabled: "false"
+
+  # ==========================================================================
+  # Health Check 설정
+  # ==========================================================================
+  health-show-details: "always"
+  prometheus-enabled: "true"
+
+  # ==========================================================================
+  # 세션 설정
+  # ==========================================================================
+  session-timeout: "1800"
+  session-cookie-secure: "false"
+
+  # ==========================================================================
+  # Graceful Shutdown 설정
+  # ==========================================================================
+  graceful-shutdown-timeout: "30s"
+
+  # ==========================================================================
+  # 파일 형태의 설정 (선택적)
+  # ==========================================================================
+  # 여러 줄의 설정이 필요한 경우 파일처럼 저장 가능
+  # Pod에서 볼륨으로 마운트하여 파일로 사용
+  # ==========================================================================
+  application-extra.properties: |
+    # 추가 설정 파일 예시
+    # Pod에서 볼륨으로 마운트하면 /config/application-extra.properties로 접근 가능
+    custom.feature.enabled=true
+    custom.cache.ttl=3600
+
+# ============================================================================
+# 환경별 ConfigMap 예시
+# ============================================================================
+# 각 환경(dev, staging, prod)에 맞는 ConfigMap을 별도로 관리
+# 네임스페이스로 환경을 분리하거나, 이름으로 구분
+# ============================================================================
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # 개발 환경용 ConfigMap
+  name: open-green-config-dev
+  namespace: default
+  labels:
+    app: open-green
+    environment: dev
+data:
+  # 개발 환경에서는 더 상세한 로깅
+  log-level-root: "DEBUG"
+  log-level-app: "DEBUG"
+  log-level-sql: "DEBUG"
+
+  # 개발 환경에서는 Swagger 활성화
+  swagger-enabled: "true"
+
+  # 개발 환경 데이터베이스
+  database-url: "jdbc:mysql://mysql-dev-service:3306/todo_dev"
+
+  # 더 작은 커넥션 풀 (리소스 절약)
+  hikari-max-pool-size: "5"
+  hikari-min-idle: "2"
+
+# ============================================================================
+# ConfigMap 사용 방법 (Deployment에서)
+# ============================================================================
+#
+# 방법 1: 개별 키를 환경변수로 주입 (권장)
+# ------------------------------------
+# env:
+#   - name: SPRING_DATASOURCE_URL
+#     valueFrom:
+#       configMapKeyRef:
+#         name: open-green-config
+#         key: database-url
+#
+# 방법 2: ConfigMap 전체를 환경변수로 주입
+# ------------------------------------
+# envFrom:
+#   - configMapRef:
+#       name: open-green-config
+#     prefix: CONFIG_  # 선택: 환경변수 접두어 추가
+#
+# 방법 3: 볼륨으로 마운트 (파일로 사용)
+# ------------------------------------
+# volumes:
+#   - name: config-volume
+#     configMap:
+#       name: open-green-config
+#       items:
+#         - key: application-extra.properties
+#           path: application-extra.properties
+#
+# containers:
+#   - name: open-green
+#     volumeMounts:
+#       - name: config-volume
+#         mountPath: /config
+#         readOnly: true
+#
+# ============================================================================
+# ConfigMap 업데이트와 Pod 반영
+# ============================================================================
+#
+# ConfigMap 업데이트 시:
+# - 환경변수로 주입된 값: Pod 재시작 필요
+# - 볼륨으로 마운트된 파일: 자동 업데이트 (kubelet sync 주기에 따라)
+#
+# Pod 재시작 방법:
+# 1. kubectl rollout restart deployment/open-green-deployment
+# 2. Reloader 같은 오퍼레이터 사용 (자동 재시작)
+#
+# ============================================================================
+# 사용 명령어 예시
+# ============================================================================
+#
+# 1. ConfigMap 생성:
+#    kubectl apply -f configmap.yaml
+#
+# 2. ConfigMap 목록 확인:
+#    kubectl get configmaps
+#    kubectl get cm  # 축약형
+#
+# 3. ConfigMap 내용 확인:
+#    kubectl describe configmap open-green-config
+#    kubectl get configmap open-green-config -o yaml
+#
+# 4. 특정 키 값 확인:
+#    kubectl get configmap open-green-config -o jsonpath='{.data.database-url}'
+#
+# 5. ConfigMap 수정:
+#    kubectl edit configmap open-green-config
+#
+# 6. 명령줄에서 ConfigMap 생성:
+#    kubectl create configmap my-config \
+#      --from-literal=key1=value1 \
+#      --from-literal=key2=value2
+#
+# 7. 파일에서 ConfigMap 생성:
+#    kubectl create configmap my-config \
+#      --from-file=config.properties
+#
+# 8. ConfigMap 삭제:
+#    kubectl delete configmap open-green-config
+#
+# ============================================================================

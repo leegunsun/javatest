@@ -1,0 +1,55 @@
+# kind 멀티 노드 클러스터 설정
+# Master 1대 + Worker 2대 구성
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+
+# 클러스터 이름 (선택사항)
+name: spring-boot-cluster
+
+# 노드 구성
+nodes:
+  # Control Plane (Master) 노드
+  - role: control-plane
+    # Master 노드에 포트 매핑 (외부 접근용)
+    extraPortMappings:
+      # NodePort 서비스 접근용 (30000-32767)
+      - containerPort: 30080
+        hostPort: 30080
+        protocol: TCP
+      - containerPort: 30443
+        hostPort: 30443
+        protocol: TCP
+      # Spring Boot 앱 포트 (필요시)
+      - containerPort: 8082
+        hostPort: 8082
+        protocol: TCP
+    # 레이블 추가 (선택사항)
+    labels:
+      node-type: master
+      environment: local
+
+  # Worker 노드 1
+  - role: worker
+    labels:
+      node-type: worker
+      worker-id: "1"
+      environment: local
+
+  # Worker 노드 2
+  - role: worker
+    labels:
+      node-type: worker
+      worker-id: "2"
+      environment: local
+
+# 네트워킹 설정 (선택사항)
+networking:
+  # Pod 네트워크 CIDR
+  podSubnet: "10.244.0.0/16"
+  # Service 네트워크 CIDR
+  serviceSubnet: "10.96.0.0/12"
+
+# 추가 기능 설정 (선택사항)
+# featureGates:
+#   "EphemeralContainers": true

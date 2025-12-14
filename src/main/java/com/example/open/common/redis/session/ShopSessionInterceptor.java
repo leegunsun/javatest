@@ -78,6 +78,7 @@ public class ShopSessionInterceptor implements HandlerInterceptor {
             if (annotation.refreshTTL()) {
                 shopSessionService.refreshTTL(request);
                 log.debug("Shop 세션 TTL 갱신됨");
+
             }
 
             // 세션 데이터를 Request Attribute에 저장

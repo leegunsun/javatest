@@ -1,0 +1,360 @@
+# ============================================================================
+# ingress.yaml - Kubernetes Ingress 리소스
+# ============================================================================
+#
+# Ingress란?
+# - 클러스터 외부에서 내부 Service로의 HTTP/HTTPS 라우팅을 관리
+# - L7 (애플리케이션 계층) 로드 밸런서 역할
+# - 단일 진입점으로 여러 서비스에 대한 트래픽 라우팅
+#
+# Ingress vs Service (LoadBalancer 타입):
+# - LoadBalancer: 서비스당 하나의 외부 IP 필요 (비용 증가)
+# - Ingress: 하나의 외부 IP로 여러 서비스 라우팅 (비용 효율적)
+#
+# Ingress의 주요 기능:
+# 1. 호스트 기반 라우팅: api.example.com -> API 서비스
+# 2. 경로 기반 라우팅: /api -> API 서비스, /web -> Web 서비스
+# 3. TLS/SSL 종료: HTTPS 처리
+# 4. 로드 밸런싱
+# 5. 이름 기반 가상 호스팅
+#
+# 필수 조건:
+# - Ingress Controller가 클러스터에 설치되어 있어야 함
+# - 예: nginx-ingress, traefik, AWS ALB Ingress Controller 등
+# ============================================================================
+
+# ============================================================================
+# Ingress Controller 설치 방법 (사전 필수)
+# ============================================================================
+#
+# nginx-ingress-controller 설치 (가장 일반적):
+#
+# Helm 사용:
+#   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+#   helm repo update
+#   helm install nginx-ingress ingress-nginx/ingress-nginx
+#
+# kubectl 사용 (YAML 직접 적용):
+#   kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/cloud/deploy.yaml
+#
+# 설치 확인:
+#   kubectl get pods -n ingress-nginx
+#   kubectl get svc -n ingress-nginx
+#
+# ============================================================================
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # name: Ingress 이름
+  name: open-green-ingress
+
+  # namespace: Ingress가 속할 네임스페이스
+  # 라우팅할 Service와 같은 네임스페이스에 있어야 함
+  namespace: default
+
+  # labels: Ingress를 분류하기 위한 레이블
+  labels:
+    app: open-green
+
+  # annotations: Ingress Controller 동작 설정
+  # 사용하는 Ingress Controller에 따라 annotation이 다름
+  annotations:
+    # --------------------------------------------------------------------------
+    # nginx-ingress-controller 전용 annotation
+    # --------------------------------------------------------------------------
+
+    # 사용할 Ingress 클래스 지정 (명시적)
+    # ingressClassName 필드와 중복이지만, 호환성을 위해 둘 다 설정 가능
+    kubernetes.io/ingress.class: "nginx"
+
+    # SSL 리다이렉트: HTTP -> HTTPS 자동 리다이렉트
+    # TLS 설정 시 true로 변경
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+    # 프록시 바디 크기 제한 (파일 업로드 등)
+    # 기본값은 1m, 필요에 따라 증가
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+
+    # 프록시 타임아웃 설정 (초)
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+
+    # WebSocket 지원 (Spring Boot WebSocket 사용 시)
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/upstream-hash-by: "$request_uri"
+
+    # CORS 설정 (필요한 경우)
+    # nginx.ingress.kubernetes.io/enable-cors: "true"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    # nginx.ingress.kubernetes.io/cors-allow-methods: "GET, PUT, POST, DELETE, PATCH, OPTIONS"
+    # nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+
+    # Rate Limiting (선택적)
+    # nginx.ingress.kubernetes.io/limit-rps: "10"
+    # nginx.ingress.kubernetes.io/limit-connections: "5"
+
+    # Sticky Session (필요한 경우)
+    # nginx.ingress.kubernetes.io/affinity: "cookie"
+    # nginx.ingress.kubernetes.io/session-cookie-name: "route"
+
+    # Rewrite 설정 예시 (경로 재작성)
+    # /api/v1/users -> /users로 요청 전달
+    # nginx.ingress.kubernetes.io/rewrite-target: /$2
+
+spec:
+  # --------------------------------------------------------------------------
+  # ingressClassName: 사용할 Ingress Controller 클래스
+  # --------------------------------------------------------------------------
+  # Kubernetes 1.18+에서 권장되는 방식
+  # kubectl get ingressclass로 사용 가능한 클래스 확인
+  # --------------------------------------------------------------------------
+  ingressClassName: nginx
+
+  # --------------------------------------------------------------------------
+  # tls: HTTPS 설정
+  # --------------------------------------------------------------------------
+  # TLS 인증서를 사용하여 HTTPS 활성화
+  # 인증서는 Secret에 저장되어 있어야 함
+  #
+  # 옵션 1: 직접 인증서 Secret 생성
+  # 옵션 2: cert-manager로 자동 발급 (Let's Encrypt)
+  # --------------------------------------------------------------------------
+  # tls:
+  #   - hosts:
+  #       - open-green.example.com
+  #       - api.open-green.example.com
+  #     # Secret 이름 (TLS 인증서 저장)
+  #     secretName: open-green-tls-secret
+
+  # --------------------------------------------------------------------------
+  # rules: 라우팅 규칙 정의
+  # --------------------------------------------------------------------------
+  # 호스트명과 경로에 따라 트래픽을 적절한 Service로 라우팅
+  # --------------------------------------------------------------------------
+  rules:
+    # ========================================================================
+    # 규칙 1: 메인 도메인 라우팅
+    # ========================================================================
+    - host: open-green.example.com  # 실제 도메인으로 변경 필요
+      http:
+        paths:
+          # 기본 경로: 모든 요청을 open-green-service로 전달
+          - path: /
+            # pathType 설명:
+            # - Prefix: 경로 접두사 매칭 (/api는 /api, /api/, /api/users 모두 매칭)
+            # - Exact: 정확한 경로만 매칭 (/api는 /api만 매칭)
+            # - ImplementationSpecific: Ingress Controller 구현에 따름
+            pathType: Prefix
+            backend:
+              service:
+                # 라우팅할 Service 이름
+                name: open-green-service
+                port:
+                  # Service의 포트 (service.yaml에서 정의한 port)
+                  number: 80
+
+    # ========================================================================
+    # 규칙 2: API 전용 서브도메인 (선택적)
+    # ========================================================================
+    - host: api.open-green.example.com  # API 전용 도메인
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+# ============================================================================
+# 다중 서비스 라우팅 예시 (경로 기반)
+# ============================================================================
+# 하나의 도메인에서 여러 서비스로 라우팅
+# ============================================================================
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open-green-ingress-multi-path
+  namespace: default
+  labels:
+    app: open-green
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # 경로 재작성: /api/(.*)를 /$1로 변경하여 백엔드에 전달
+    # 예: /api/users -> /users
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: open-green.example.com
+      http:
+        paths:
+          # API 요청: /api/* -> open-green-service
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+          # 정적 파일: /static/* -> static-files-service (예시)
+          # - path: /static(/|$)(.*)
+          #   pathType: ImplementationSpecific
+          #   backend:
+          #     service:
+          #       name: static-files-service
+          #       port:
+          #         number: 80
+
+          # 기본 경로: 프론트엔드 서비스 (예시)
+          # - path: /
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: frontend-service
+          #       port:
+          #         number: 80
+
+# ============================================================================
+# HTTPS Ingress 예시 (TLS 설정)
+# ============================================================================
+# Let's Encrypt 인증서를 사용한 HTTPS 설정
+# cert-manager가 설치되어 있어야 자동 갱신 가능
+# ============================================================================
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open-green-ingress-tls
+  namespace: default
+  labels:
+    app: open-green
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    # HTTP -> HTTPS 자동 리다이렉트
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+
+    # cert-manager로 자동 인증서 발급 (cert-manager 설치 필요)
+    # cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # cert-manager.io/issuer: "letsencrypt-prod"
+
+    # HSTS (HTTP Strict Transport Security) 설정
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "31536000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - open-green.example.com
+      secretName: open-green-tls-secret  # TLS 인증서가 저장된 Secret
+  rules:
+    - host: open-green.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+# ============================================================================
+# 로컬 개발용 Ingress (minikube, Docker Desktop)
+# ============================================================================
+# 로컬 환경에서 테스트할 때 사용
+# /etc/hosts에 open-green.local 127.0.0.1 추가 필요
+# ============================================================================
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: open-green-ingress-local
+  namespace: default
+  labels:
+    app: open-green
+    environment: local
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  ingressClassName: nginx
+  rules:
+    # 로컬 테스트용 도메인
+    # /etc/hosts (Windows: C:\Windows\System32\drivers\etc\hosts)에 추가:
+    # 127.0.0.1 open-green.local
+    - host: open-green.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: open-green-service
+                port:
+                  number: 80
+
+# ============================================================================
+# Ingress 동작 원리
+# ============================================================================
+#
+# 1. 외부 요청 흐름:
+#    Client -> LoadBalancer/NodePort -> Ingress Controller -> Service -> Pod
+#
+# 2. Ingress Controller 역할:
+#    - Ingress 리소스 감시
+#    - 라우팅 규칙을 실제 설정으로 변환
+#    - nginx.conf 또는 HAProxy 설정 자동 업데이트
+#    - 트래픽 라우팅 수행
+#
+# 3. DNS 설정:
+#    - 도메인을 Ingress Controller의 외부 IP로 지정
+#    - 클라우드: LoadBalancer IP
+#    - 온프레미스: 노드 IP (NodePort)
+#    - 로컬: 127.0.0.1 (/etc/hosts)
+#
+# ============================================================================
+# 사용 명령어 예시
+# ============================================================================
+#
+# 1. Ingress 생성:
+#    kubectl apply -f ingress.yaml
+#
+# 2. Ingress 목록 확인:
+#    kubectl get ingress
+#    kubectl get ing  # 축약형
+#
+# 3. Ingress 상세 정보:
+#    kubectl describe ingress open-green-ingress
+#
+# 4. Ingress Controller 확인:
+#    kubectl get pods -n ingress-nginx
+#    kubectl get svc -n ingress-nginx
+#
+# 5. Ingress Controller 외부 IP 확인:
+#    kubectl get svc -n ingress-nginx -o wide
+#
+# 6. Ingress Controller 로그 확인:
+#    kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx -f
+#
+# 7. IngressClass 목록 확인:
+#    kubectl get ingressclass
+#
+# 8. 로컬 테스트 (minikube):
+#    minikube addons enable ingress
+#    minikube tunnel  # 별도 터미널에서 실행
+#
+# 9. 로컬 테스트 (Docker Desktop):
+#    # hosts 파일에 추가 후 http://open-green.local 접근
+#
+# 10. cert-manager로 TLS 인증서 자동 발급:
+#     kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+#
+# ============================================================================

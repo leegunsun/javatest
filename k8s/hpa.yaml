@@ -1,0 +1,367 @@
+# ============================================================================
+# hpa.yaml - Kubernetes Horizontal Pod Autoscaler (HPA)
+# ============================================================================
+#
+# HPA란?
+# - Pod의 수를 자동으로 조절하는 컨트롤러
+# - 메트릭(CPU, 메모리, 커스텀 메트릭)을 기반으로 스케일링
+# - 부하가 높으면 Pod 증가, 낮으면 감소
+#
+# HPA vs VPA:
+# - HPA (Horizontal): Pod 수를 늘리거나 줄임 (수평 확장)
+# - VPA (Vertical): Pod의 리소스(CPU, 메모리)를 조절 (수직 확장)
+#
+# HPA 동작 원리:
+# 1. Metrics Server에서 메트릭 수집
+# 2. 목표값과 현재값 비교
+# 3. 필요한 replicas 수 계산
+# 4. Deployment의 replicas 업데이트
+#
+# 필수 조건:
+# 1. Metrics Server 설치 필요
+# 2. Pod에 resources.requests 설정 필요 (CPU/메모리 기준 스케일링 시)
+# ============================================================================
+
+# ============================================================================
+# Metrics Server 설치 방법 (사전 필수)
+# ============================================================================
+#
+# Metrics Server: Pod의 CPU/메모리 사용량을 수집하는 클러스터 애드온
+#
+# 설치 (일반):
+#   kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+#
+# 설치 (minikube):
+#   minikube addons enable metrics-server
+#
+# 설치 (Docker Desktop):
+#   이미 내장되어 있거나 위 명령어로 설치
+#
+# 설치 확인:
+#   kubectl top nodes
+#   kubectl top pods
+#
+# ============================================================================
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  # name: HPA 이름
+  name: open-green-hpa
+
+  # namespace: HPA가 속할 네임스페이스
+  # 대상 Deployment와 같은 네임스페이스에 있어야 함
+  namespace: default
+
+  # labels: HPA를 분류하기 위한 레이블
+  labels:
+    app: open-green
+
+spec:
+  # --------------------------------------------------------------------------
+  # scaleTargetRef: 스케일링 대상 리소스
+  # --------------------------------------------------------------------------
+  # HPA가 관리할 워크로드 지정
+  # Deployment, ReplicaSet, StatefulSet 등 가능
+  # --------------------------------------------------------------------------
+  scaleTargetRef:
+    # apiVersion: 대상 리소스의 API 버전
+    apiVersion: apps/v1
+    # kind: 대상 리소스 타입
+    kind: Deployment
+    # name: 대상 Deployment 이름
+    name: open-green-deployment
+
+  # --------------------------------------------------------------------------
+  # minReplicas / maxReplicas: Pod 수 범위
+  # --------------------------------------------------------------------------
+  # 스케일링의 하한과 상한 설정
+  # - minReplicas: 최소 Pod 수 (고가용성을 위해 2 이상 권장)
+  # - maxReplicas: 최대 Pod 수 (리소스와 비용 고려)
+  #
+  # 주의: maxReplicas가 너무 높으면 갑작스러운 스케일 아웃으로
+  #       클러스터 리소스 부족 또는 비용 증가 발생 가능
+  # --------------------------------------------------------------------------
+  minReplicas: 2
+  maxReplicas: 10
+
+  # --------------------------------------------------------------------------
+  # metrics: 스케일링 기준 메트릭
+  # --------------------------------------------------------------------------
+  # 여러 메트릭을 설정할 수 있으며, 가장 높은 replicas 수가 적용됨
+  #
+  # 메트릭 타입:
+  # 1. Resource: CPU, 메모리 (가장 일반적)
+  # 2. Pods: Pod 단위의 커스텀 메트릭
+  # 3. Object: Kubernetes 객체의 메트릭
+  # 4. External: 외부 시스템의 메트릭
+  # --------------------------------------------------------------------------
+  metrics:
+    # ========================================================================
+    # 메트릭 1: CPU 사용률 기반 스케일링
+    # ========================================================================
+    - type: Resource
+      resource:
+        # name: 리소스 이름 (cpu 또는 memory)
+        name: cpu
+        target:
+          # type: 목표 타입
+          # - Utilization: 백분율 (requests 대비 사용률)
+          # - AverageValue: 절대값 (예: 100m)
+          # - Value: 총합 (잘 사용 안 함)
+          type: Utilization
+          # averageUtilization: 목표 CPU 사용률 (%)
+          # 현재 사용률이 이 값을 초과하면 스케일 아웃
+          # 이 값 미만이면 스케일 인
+          #
+          # 권장값: 50-80%
+          # - 50%: 빠른 응답, 여유 있는 스케일링
+          # - 80%: 리소스 효율 높음, 스케일링 지연 가능
+          #
+          # 계산 공식:
+          # 필요 replicas = ceil(현재 replicas * (현재 사용률 / 목표 사용률))
+          # 예: 현재 2개, 사용률 80%, 목표 50%
+          #     -> ceil(2 * (80/50)) = ceil(3.2) = 4개로 스케일 아웃
+          averageUtilization: 70
+
+    # ========================================================================
+    # 메트릭 2: 메모리 사용률 기반 스케일링
+    # ========================================================================
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          # 메모리 사용률 목표
+          # 주의: 메모리 스케일링은 CPU보다 예측이 어려움
+          # - Java 애플리케이션은 힙 크기가 고정되어 있어
+          #   메모리 사용량이 일정한 경우가 많음
+          # - 메모리 누수가 있으면 스케일 아웃이 해결책이 아님
+          averageUtilization: 80
+
+    # ========================================================================
+    # 메트릭 3: 커스텀 메트릭 기반 스케일링 (고급)
+    # ========================================================================
+    # Prometheus Adapter 또는 KEDA가 필요
+    # 예: HTTP 요청 수, 큐 길이, 커스텀 비즈니스 메트릭
+    # ========================================================================
+    # - type: Pods
+    #   pods:
+    #     metric:
+    #       # Prometheus 메트릭 이름
+    #       name: http_requests_per_second
+    #     target:
+    #       type: AverageValue
+    #       # Pod당 평균 초당 요청 수 목표
+    #       averageValue: 100
+
+    # ========================================================================
+    # 메트릭 4: External 메트릭 (외부 시스템)
+    # ========================================================================
+    # 예: 메시지 큐 길이, 외부 모니터링 시스템 메트릭
+    # ========================================================================
+    # - type: External
+    #   external:
+    #     metric:
+    #       name: kafka_consumergroup_lag
+    #       selector:
+    #         matchLabels:
+    #           consumergroup: order-group
+    #     target:
+    #       type: AverageValue
+    #       averageValue: 1000  # 평균 lag이 1000 이하 유지
+
+  # --------------------------------------------------------------------------
+  # behavior: 스케일링 동작 세부 조정
+  # --------------------------------------------------------------------------
+  # 스케일 아웃/인 속도와 안정화 기간 설정
+  # 급격한 스케일링을 방지하고 안정적인 운영 보장
+  # --------------------------------------------------------------------------
+  behavior:
+    # 스케일 아웃 (Pod 증가) 동작
+    scaleUp:
+      # stabilizationWindowSeconds: 안정화 기간 (초)
+      # 이 기간 동안 메트릭을 관찰하여 스케일 아웃 결정
+      # 짧은 스파이크에 의한 불필요한 스케일 아웃 방지
+      stabilizationWindowSeconds: 60
+
+      # policies: 스케일링 정책
+      # 여러 정책 중 가장 많이 변경하는 정책 적용 (selectPolicy: Max)
+      policies:
+        # 정책 1: 60초마다 최대 4개의 Pod 추가
+        - type: Pods
+          value: 4
+          periodSeconds: 60
+        # 정책 2: 60초마다 최대 100% 증가
+        # 예: 현재 2개 -> 최대 4개 (100% 증가)
+        - type: Percent
+          value: 100
+          periodSeconds: 60
+
+      # selectPolicy: 여러 정책 중 선택 방식
+      # - Max: 가장 많이 변경하는 정책 (빠른 스케일 아웃)
+      # - Min: 가장 적게 변경하는 정책 (보수적)
+      # - Disabled: 스케일 아웃 비활성화
+      selectPolicy: Max
+
+    # 스케일 인 (Pod 감소) 동작
+    scaleDown:
+      # 스케일 인은 더 보수적으로 설정
+      # 급격한 Pod 감소는 서비스 불안정 유발 가능
+      stabilizationWindowSeconds: 300  # 5분간 안정 후 스케일 인
+
+      policies:
+        # 정책 1: 60초마다 최대 1개의 Pod 제거
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+        # 정책 2: 60초마다 최대 10% 감소
+        - type: Percent
+          value: 10
+          periodSeconds: 60
+
+      # Min: 가장 적게 변경하는 정책 (보수적인 스케일 인)
+      selectPolicy: Min
+
+# ============================================================================
+# HPA v2beta2 예시 (이전 버전 호환)
+# ============================================================================
+# Kubernetes 1.23 미만에서는 autoscaling/v2beta2 사용
+# ============================================================================
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: open-green-hpa-v2beta2
+  namespace: default
+  labels:
+    app: open-green
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: open-green-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+# ============================================================================
+# HPA v1 예시 (기본, 가장 단순)
+# ============================================================================
+# CPU 기반 스케일링만 지원하는 간단한 버전
+# ============================================================================
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: open-green-hpa-v1
+  namespace: default
+  labels:
+    app: open-green
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: open-green-deployment
+  minReplicas: 2
+  maxReplicas: 10
+  # targetCPUUtilizationPercentage: 목표 CPU 사용률
+  targetCPUUtilizationPercentage: 70
+
+# ============================================================================
+# HPA 알고리즘 설명
+# ============================================================================
+#
+# 기본 공식:
+#   desiredReplicas = ceil(currentReplicas * (currentMetricValue / desiredMetricValue))
+#
+# 예시:
+#   현재 replicas: 3
+#   현재 CPU 사용률: 80%
+#   목표 CPU 사용률: 50%
+#   필요 replicas: ceil(3 * (80 / 50)) = ceil(4.8) = 5
+#
+# 여러 메트릭 사용 시:
+#   각 메트릭에서 계산된 replicas 중 최대값 사용
+#
+# 스케일링 조건:
+#   - 스케일 아웃: 현재값 > 목표값 * (1 + tolerance)
+#   - 스케일 인: 현재값 < 목표값 * (1 - tolerance)
+#   - tolerance 기본값: 10% (0.1)
+#   - 10% 이내 변동은 스케일링하지 않음 (안정성)
+#
+# ============================================================================
+# HPA 모범 사례
+# ============================================================================
+#
+# 1. resources.requests 반드시 설정
+#    - HPA는 requests 대비 사용률로 계산
+#    - requests가 없으면 CPU/메모리 스케일링 불가
+#
+# 2. 적절한 목표값 설정
+#    - 너무 낮으면: 과도한 Pod 생성, 비용 증가
+#    - 너무 높으면: 응답 지연, 서비스 품질 저하
+#    - 권장: CPU 50-70%, 메모리 70-80%
+#
+# 3. minReplicas 적절히 설정
+#    - 고가용성: 최소 2개 이상
+#    - 콜드 스타트 방지: 예상 최소 부하 고려
+#
+# 4. maxReplicas 제한
+#    - 클러스터 리소스 고려
+#    - 비용 제어
+#    - 종속 서비스 용량 고려 (DB 연결 수 등)
+#
+# 5. 스케일 인 보수적으로
+#    - stabilizationWindowSeconds 충분히 설정
+#    - 급격한 스케일 인은 서비스 불안정 유발
+#
+# 6. PodDisruptionBudget과 함께 사용
+#    - 스케일 인 시에도 최소 가용 Pod 보장
+#
+# ============================================================================
+# 사용 명령어 예시
+# ============================================================================
+#
+# 1. HPA 생성:
+#    kubectl apply -f hpa.yaml
+#
+# 2. HPA 목록 확인:
+#    kubectl get hpa
+#
+# 3. HPA 상세 정보:
+#    kubectl describe hpa open-green-hpa
+#
+# 4. HPA 상태 실시간 확인:
+#    kubectl get hpa -w
+#    # TARGETS 컬럼: 현재값/목표값 표시
+#
+# 5. Pod 리소스 사용량 확인:
+#    kubectl top pods -l app=open-green
+#
+# 6. 노드 리소스 사용량 확인:
+#    kubectl top nodes
+#
+# 7. 수동 스케일링 (테스트용):
+#    kubectl scale deployment open-green-deployment --replicas=5
+#    # 주의: HPA가 활성화되어 있으면 HPA가 다시 조절함
+#
+# 8. HPA 비활성화 (일시적):
+#    kubectl delete hpa open-green-hpa
+#    # 또는 annotation 추가
+#
+# 9. 부하 테스트 (HPA 동작 확인):
+#    # 부하 생성 Pod
+#    kubectl run -i --tty load-generator --rm --image=busybox --restart=Never -- \
+#      /bin/sh -c "while sleep 0.01; do wget -q -O- http://open-green-service; done"
+#
+# 10. HPA 이벤트 확인:
+#     kubectl describe hpa open-green-hpa | grep -A 20 Events
+#
+# ============================================================================

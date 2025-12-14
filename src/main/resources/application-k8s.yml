@@ -1,0 +1,283 @@
+# ============================================================================
+# application-k8s.yml - Kubernetes 환경 전용 Spring Boot 설정
+# ============================================================================
+#
+# 이 파일의 목적:
+# - Kubernetes 환경에서 실행될 때 활성화되는 설정 프로파일
+# - 환경변수를 통해 외부에서 설정값을 주입받음
+# - ConfigMap과 Secret에서 제공하는 값들을 참조
+#
+# 활성화 방법:
+# - 환경변수: SPRING_PROFILES_ACTIVE=k8s
+# - 또는 JVM 옵션: -Dspring.profiles.active=k8s
+#
+# 환경변수 참조 문법:
+# - ${ENV_VAR}: 환경변수 값 사용
+# - ${ENV_VAR:default}: 환경변수가 없으면 default 값 사용
+# ============================================================================
+
+spring:
+  # ==========================================================================
+  # 애플리케이션 기본 정보
+  # ==========================================================================
+  application:
+    # 애플리케이션 이름 - Kubernetes에서 서비스 디스커버리에 사용됨
+    name: open-green
+
+  # ==========================================================================
+  # 데이터베이스 설정 (MySQL)
+  # ==========================================================================
+  # Kubernetes에서는 데이터베이스가 별도의 Pod/Service로 실행됨
+  # Service 이름을 호스트명으로 사용하여 DNS를 통해 접근
+  # ==========================================================================
+  datasource:
+    # JDBC URL - Kubernetes Service DNS를 통해 MySQL에 접근
+    # 형식: jdbc:mysql://<service-name>.<namespace>.svc.cluster.local:<port>/<database>
+    # 같은 네임스페이스 내에서는 <service-name>만으로도 접근 가능
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql-service:3306/todo}
+
+    # 데이터베이스 접속 정보 - Secret에서 주입
+    # 민감한 정보이므로 환경변수로 주입받아야 함
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+
+    # HikariCP 커넥션 풀 설정
+    hikari:
+      # 최대 커넥션 수 - Pod 리소스에 맞게 조정
+      # 너무 높으면 메모리 부족, 너무 낮으면 성능 저하
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:10}
+      # 최소 유휴 커넥션 - 최소한 유지할 커넥션 수
+      minimum-idle: ${HIKARI_MIN_IDLE:5}
+      # 커넥션 타임아웃 - 커넥션 획득 대기 시간
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}
+      # 유휴 타임아웃 - 유휴 커넥션 유지 시간
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT:600000}
+      # 최대 수명 - 커넥션 최대 유지 시간 (MySQL의 wait_timeout보다 작게)
+      max-lifetime: ${HIKARI_MAX_LIFETIME:1800000}
+
+  # ==========================================================================
+  # Flyway 데이터베이스 마이그레이션
+  # ==========================================================================
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: true
+    # Flyway는 datasource 설정을 상속받지만, 별도 설정도 가능
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql-service:3306/todo}
+    user: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+
+  # ==========================================================================
+  # Redis 설정 (세션 저장소, 캐싱)
+  # ==========================================================================
+  # Kubernetes에서 Redis도 별도의 Service로 실행
+  # ==========================================================================
+  session:
+    store-type: redis
+
+  data:
+    redis:
+      # Redis Service DNS 이름
+      host: ${SPRING_REDIS_HOST:redis-service}
+      port: ${SPRING_REDIS_PORT:6379}
+      # Redis 비밀번호 (설정된 경우) - Secret에서 주입
+      password: ${SPRING_REDIS_PASSWORD:}
+      timeout: ${SPRING_REDIS_TIMEOUT:60000}
+      lettuce:
+        pool:
+          # 커넥션 풀 설정 - Pod 리소스에 맞게 조정
+          max-active: ${REDIS_POOL_MAX_ACTIVE:10}
+          max-idle: ${REDIS_POOL_MAX_IDLE:8}
+          min-idle: ${REDIS_POOL_MIN_IDLE:2}
+          max-wait: ${REDIS_POOL_MAX_WAIT:3000ms}
+
+  # ==========================================================================
+  # Kafka 설정
+  # ==========================================================================
+  # Kubernetes에서 Kafka 클러스터도 별도의 Service로 실행
+  # ==========================================================================
+  kafka:
+    # Kafka 브로커 주소 - Kubernetes Service DNS
+    # 여러 브로커가 있는 경우 쉼표로 구분
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka-service:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      # acks=all: 모든 복제본이 메시지를 받을 때까지 대기 (가장 안전)
+      acks: all
+      # 재시도 횟수
+      retries: 3
+    consumer:
+      # Consumer 그룹 ID - 같은 그룹의 Consumer들이 메시지를 나눠서 처리
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:order-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      enable-auto-commit: true
+
+  # ==========================================================================
+  # JPA 설정
+  # ==========================================================================
+  jpa:
+    # Kubernetes 프로덕션 환경에서는 DDL 자동 생성 비활성화
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:none}
+    properties:
+      hibernate:
+        # 프로덕션에서는 SQL 로깅 비활성화 (성능)
+        show_sql: ${HIBERNATE_SHOW_SQL:false}
+        format_sql: false
+    # 애플리케이션 시작 시 스키마 초기화 방지
+    defer-datasource-initialization: false
+
+  # ==========================================================================
+  # Thymeleaf 설정
+  # ==========================================================================
+  thymeleaf:
+    prefix: classpath:/templates/
+    suffix: .html
+    # 프로덕션에서는 캐시 활성화 (성능 향상)
+    cache: ${THYMELEAF_CACHE:true}
+    mode: HTML
+
+# ============================================================================
+# 서버 설정
+# ============================================================================
+server:
+  # 포트 - Dockerfile EXPOSE와 일치해야 함
+  port: ${SERVER_PORT:8082}
+
+  # Graceful Shutdown 설정
+  # Pod 종료 시 진행 중인 요청을 완료할 수 있게 함
+  shutdown: graceful
+
+  # 세션 설정
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT:1800}  # 30분
+      cookie:
+        name: JSESSIONID
+        # Kubernetes에서는 보안을 위해 secure 쿠키 권장
+        secure: ${SESSION_COOKIE_SECURE:false}
+        http-only: true
+
+# ============================================================================
+# Spring Boot Actuator 설정 - 매우 중요!
+# ============================================================================
+# Actuator는 애플리케이션의 상태 모니터링을 위한 엔드포인트 제공
+# Kubernetes의 Liveness/Readiness Probe가 이 엔드포인트를 사용
+# ============================================================================
+management:
+  # Actuator 엔드포인트 서버 설정
+  server:
+    # 메인 애플리케이션과 같은 포트 사용 (별도 포트 설정 가능)
+    port: ${MANAGEMENT_SERVER_PORT:8082}
+
+  # 엔드포인트 노출 설정
+  endpoints:
+    web:
+      exposure:
+        # 노출할 엔드포인트 목록
+        # health: 건강 상태 체크 (Probe용)
+        # info: 애플리케이션 정보
+        # prometheus: Prometheus 메트릭 (모니터링용, 선택)
+        # metrics: 메트릭 정보
+        include: ${MANAGEMENT_ENDPOINTS_INCLUDE:health,info,prometheus,metrics}
+      # Actuator 엔드포인트 기본 경로
+      base-path: /actuator
+
+  # 개별 엔드포인트 설정
+  endpoint:
+    health:
+      # 상세한 건강 상태 정보 표시
+      # always: 항상 상세 정보 표시
+      # when-authorized: 인증된 사용자에게만
+      # never: 상세 정보 숨김
+      show-details: ${HEALTH_SHOW_DETAILS:always}
+
+      # 각 구성 요소(DB, Redis 등)의 상태도 포함
+      show-components: always
+
+      # Probe 전용 엔드포인트 활성화
+      # /actuator/health/liveness: Liveness Probe용
+      # /actuator/health/readiness: Readiness Probe용
+      probes:
+        enabled: true
+
+    # Prometheus 메트릭 엔드포인트
+    prometheus:
+      enabled: ${PROMETHEUS_ENABLED:true}
+
+  # Health Indicator 설정
+  health:
+    # Liveness: 애플리케이션이 살아있는지 (재시작 필요 여부)
+    livenessState:
+      enabled: true
+    # Readiness: 트래픽을 받을 준비가 되었는지 (서비스 제외 여부)
+    readinessState:
+      enabled: true
+    # 데이터베이스 연결 상태 체크
+    db:
+      enabled: true
+    # Redis 연결 상태 체크
+    redis:
+      enabled: true
+    # Kafka 연결 상태 체크
+    kafka:
+      enabled: ${HEALTH_KAFKA_ENABLED:true}
+
+  # Prometheus 메트릭 설정
+  prometheus:
+    metrics:
+      export:
+        enabled: ${PROMETHEUS_EXPORT_ENABLED:true}
+
+  # 메트릭 태그 - 분산 환경에서 구분을 위해
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# ============================================================================
+# 로깅 설정
+# ============================================================================
+# Kubernetes에서는 로그가 stdout/stderr로 출력되어야 함
+# 로그 수집기(Fluentd, Filebeat 등)가 이를 수집
+# ============================================================================
+logging:
+  # 로그 레벨 설정
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.example.open: ${LOG_LEVEL_APP:INFO}
+    # 프로덕션에서는 상세 로깅 줄임
+    org.springframework.web: ${LOG_LEVEL_WEB:WARN}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
+    org.springframework.kafka: ${LOG_LEVEL_KAFKA:WARN}
+
+  # 로그 패턴 - JSON 형식 권장 (로그 수집/분석 용이)
+  pattern:
+    console: ${LOG_PATTERN:%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n}
+
+# ============================================================================
+# 세션 설정 (멀티 세션)
+# ============================================================================
+session:
+  normal:
+    # Kubernetes에서는 Ingress 도메인에 맞게 설정
+    cookie-domain: ${SESSION_COOKIE_DOMAIN:}
+  shop:
+    allowed-hosts: ${SESSION_SHOP_ALLOWED_HOSTS:}
+
+# ============================================================================
+# Swagger UI 설정
+# ============================================================================
+springdoc:
+  swagger-ui:
+    # Kubernetes 환경에서 Swagger 활성화 여부
+    enabled: ${SWAGGER_ENABLED:false}
+
+# ============================================================================
+# Spring Boot의 Graceful Shutdown 상세 설정
+# ============================================================================
+spring.lifecycle:
+  # Graceful Shutdown 대기 시간
+  # Pod terminationGracePeriodSeconds보다 작아야 함
+  timeout-per-shutdown-phase: ${GRACEFUL_SHUTDOWN_TIMEOUT:30s}
