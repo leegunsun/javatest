@@ -1,0 +1,109 @@
+# =============================================================================
+# open-green Loki Stack - Local Development
+# =============================================================================
+# 로컬 테스트용 Loki + Promtail + Grafana 스택
+#
+# 실행 방법:
+#   cd docker/loki
+#   docker-compose up -d
+#
+# 접속 URL:
+#   - Grafana: http://localhost:3001 (admin/admin)
+#   - Loki API: http://localhost:3100
+#   - Promtail: http://localhost:9080
+#
+# 종료 방법:
+#   docker-compose down
+#   docker-compose down -v  # 데이터 볼륨까지 삭제
+# =============================================================================
+
+version: "3.8"
+
+networks:
+  loki-network:
+    driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:
+
+services:
+  # ===========================================================================
+  # Loki - 로그 저장 및 쿼리 엔진
+  # ===========================================================================
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: open-green-loki
+    ports:
+      - "3100:3100"
+      - "9096:9096"
+    volumes:
+      - ./loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    restart: unless-stopped
+    networks:
+      - loki-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Promtail - 로그 수집 에이전트
+  # ===========================================================================
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: open-green-promtail
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml:ro
+      - ../../logs:/var/log/open-green:ro  # Spring Boot 로그 디렉토리 마운트
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    networks:
+      - loki-network
+    depends_on:
+      loki:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ===========================================================================
+  # Grafana - 시각화 대시보드
+  # ===========================================================================
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: open-green-grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    restart: unless-stopped
+    networks:
+      - loki-network
+    depends_on:
+      loki:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

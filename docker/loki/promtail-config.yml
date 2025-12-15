@@ -1,0 +1,113 @@
+# =============================================================================
+# Promtail Configuration (Local Development)
+# =============================================================================
+# open-green Spring Boot 애플리케이션의 JSON 로그 파일을 수집하여 Loki로 전송
+# 로컬 테스트용 설정
+# =============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    batchwait: 1s
+    batchsize: 1048576  # 1MB
+    timeout: 10s
+
+scrape_configs:
+  # ==========================================================================
+  # Application Logs (JSON) - INFO, DEBUG, WARN
+  # ==========================================================================
+  - job_name: open-green-app
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: open-green
+          env: local
+          instance: app-1
+          log_type: app
+          __path__: /var/log/open-green/appLogs/*.json
+    pipeline_stages:
+      # JSON 파싱 - 필요한 필드만 추출
+      - json:
+          expressions:
+            level: level
+            message: message
+            traceId: traceId
+            spanId: spanId
+            service: service
+            logger: logger_name
+            thread: thread_name
+      # 라벨 추출
+      - labels:
+          level:
+          traceId:
+          spanId:
+          service:
+          logger:
+      # 출력 포맷
+      - output:
+          source: message
+
+  # ==========================================================================
+  # Error Logs (JSON) - ERROR only
+  # ==========================================================================
+  - job_name: open-green-error
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: open-green
+          env: local
+          instance: app-1
+          log_type: error
+          __path__: /var/log/open-green/errorLogs/*.json
+    pipeline_stages:
+      # JSON 파싱
+      - json:
+          expressions:
+            level: level
+            message: message
+            traceId: traceId
+            spanId: spanId
+            service: service
+            logger: logger_name
+            thread: thread_name
+            stackTrace: stack_trace
+      # 라벨 추출
+      - labels:
+          level:
+          traceId:
+          spanId:
+          service:
+          logger:
+      # 출력 포맷 (스택트레이스 포함)
+      - template:
+          source: output_msg
+          template: '{{ .message }}{{ if .stackTrace }}
+{{ .stackTrace }}{{ end }}'
+      - output:
+          source: output_msg
+
+  # ==========================================================================
+  # Console/Plain Text Logs (fallback)
+  # ==========================================================================
+  - job_name: open-green-console
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: open-green
+          env: local
+          instance: app-1
+          log_type: console
+          __path__: /var/log/open-green/*.log
+    pipeline_stages:
+      - multiline:
+          firstline: '^\d{4}-\d{2}-\d{2}'
+          max_wait_time: 3s
