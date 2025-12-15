@@ -1,12 +1,109 @@
+# =============================================================================
+# Grafana Datasource - Loki Configuration
+# =============================================================================
+# Grafana 자동 프로비저닝용 Loki 데이터소스 설정
+# - Grafana 시작 시 자동으로 Loki 데이터소스가 등록됨
+# - 수동 설정 없이 바로 로그 조회 가능
+#
+# 🔗 Loki-Grafana 관계:
+#   - Loki: 로그 저장소 (Promtail로부터 수집한 로그 저장)
+#   - Grafana: 시각화 도구 (Loki에 쿼리하여 로그 표시)
+#   - 데이터 흐름: Grafana → Loki API → 로그 결과 반환
+#
+# 📁 파일 위치:
+#   - docker/loki/provisioning/datasources/loki.yml
+#   - docker-compose.yml에서 /etc/grafana/provisioning으로 마운트됨
+# =============================================================================
+
+# Grafana 프로비저닝 API 버전
+# - 1: 현재 지원되는 버전
 apiVersion: 1
 
+# =============================================================================
+# 📊 데이터소스 목록
+# =============================================================================
+# Grafana에 등록할 데이터소스 정의
 datasources:
+  # ---------------------------------------------------------------------------
+  # Loki 데이터소스
+  # ---------------------------------------------------------------------------
+  # Grafana에서 Loki에 연결하기 위한 설정
+  # 🔗 [Loki 연관 - 핵심]: 이 설정으로 Grafana가 Loki에 접근
   - name: Loki
+    # 데이터소스 타입
+    # - loki: Grafana Labs의 Loki 데이터소스 플러그인
+    # - 다른 타입: prometheus, elasticsearch, mysql 등
     type: loki
+
+    # 접근 모드
+    # - proxy: Grafana 서버가 데이터소스에 프록시로 접근 (권장)
+    #   - 장점: CORS 문제 없음, 인증 정보 브라우저에 노출 안됨
+    #   - 단점: Grafana 서버 부하 증가
+    # - direct: 브라우저가 직접 데이터소스에 접근
+    #   - 장점: Grafana 서버 부하 감소
+    #   - 단점: CORS 설정 필요, 브라우저에서 접근 가능해야 함
     access: proxy
+
+    # Loki 서버 URL
+    # 🔗 [Loki 연관 - 핵심]: loki-config.yml의 server.http_listen_port(3100)와 일치
+    # 🔗 [docker-compose.yml 연관]:
+    #    - 'loki'는 Docker 네트워크의 서비스 이름
+    #    - docker-compose.yml의 loki 서비스와 동일 네트워크(loki-network)에 있어야 함
+    # 🔗 [Promtail 연관]: promtail-config.yml의 clients.url과 동일한 호스트:포트
     url: http://loki:3100
+
+    # 기본 데이터소스 설정
+    # - true: Explore 페이지에서 기본 선택됨
+    # - 여러 데이터소스 중 가장 자주 사용하는 것을 기본으로 설정
     isDefault: true
+
+    # 편집 가능 여부
+    # - false: Grafana UI에서 이 데이터소스 설정 변경 불가
+    # - 프로비저닝된 데이터소스는 파일로만 관리 (GitOps 친화적)
+    # - true로 설정하면 UI에서 수정 가능하지만 컨테이너 재시작 시 원복됨
     editable: false
+
+    # JSON 데이터 (추가 설정)
+    # - 데이터소스별 고급 설정 옵션
     jsonData:
+      # 쿼리 결과 최대 라인 수
+      # - Explore 페이지에서 한 번에 표시할 최대 로그 라인 수
+      # - 값이 크면 더 많은 로그 표시, 메모리 사용량 증가
+      # 🔗 [Loki 연관]: loki-config.yml의 max_query_series(10000)와 별개
+      #    - maxLines: Grafana 클라이언트 측 제한
+      #    - max_query_series: Loki 서버 측 제한
       maxLines: 1000
+
+      # HTTP 요청 타임아웃 (초)
+      # - Grafana → Loki 쿼리 요청의 최대 대기 시간
+      # - 복잡한 쿼리나 대용량 결과에 대비하여 충분히 설정
+      # 🔗 [Promtail 연관]: promtail-config.yml의 clients.timeout(10s)과 별개
+      #    - 이 타임아웃은 Grafana ↔ Loki 간 쿼리용
+      #    - Promtail 타임아웃은 Promtail → Loki 간 푸시용
       timeout: 60
+
+# =============================================================================
+# 📝 사용 예시 (Grafana Explore)
+# =============================================================================
+# Loki 쿼리 예시 (LogQL):
+#
+# 1. 모든 로그 조회:
+#    {job="open-green"}
+#
+# 2. 특정 로그 타입 조회:
+#    {job="open-green", log_type="app"}
+#    {job="open-green", log_type="error"}
+#
+# 3. 로그 레벨로 필터링:
+#    {job="open-green"} |= "ERROR"
+#    {job="open-green", level="ERROR"}
+#
+# 4. 특정 traceId로 요청 추적:
+#    {job="open-green", traceId="abc123"}
+#
+# 5. 로그 내용 검색 (전체 텍스트):
+#    {job="open-green"} |~ "NullPointerException"
+#
+# 6. 서비스별 에러 집계:
+#    sum(count_over_time({job="open-green", level="ERROR"}[1h])) by (service)
+# =============================================================================

@@ -3,94 +3,322 @@
 # =============================================================================
 # open-green 프로젝트 로컬 테스트용 설정
 # 파일 시스템 기반 저장소 사용
+#
+# 🔗 Loki-Promtail 관계 개요:
+#   - Loki: 로그 저장소 및 쿼리 엔진 (로그를 받아서 저장하고 검색 제공)
+#   - Promtail: 로그 수집 에이전트 (로그 파일을 읽어서 Loki로 전송)
+#   - 데이터 흐름: [Application] → [Log Files] → [Promtail] → [Loki] → [Grafana]
 # =============================================================================
 
+# -----------------------------------------------------------------------------
+# 🔐 인증 설정
+# -----------------------------------------------------------------------------
+# false: 멀티테넌트 기능 비활성화 (단일 테넌트 모드)
+# - 로컬 개발 환경에서는 인증 없이 사용
+# - 프로덕션에서는 true로 설정하여 X-Scope-OrgID 헤더 필수화
+# 🔗 [Promtail 연관]: Promtail의 tenant_id 설정과 연관
+#    - auth_enabled: true일 경우 Promtail에서 tenant_id 지정 필요
 auth_enabled: false
 
+# -----------------------------------------------------------------------------
+# 🌐 서버 설정
+# -----------------------------------------------------------------------------
 server:
+  # HTTP API 수신 포트 (Promtail, Grafana, 기타 클라이언트가 접속)
+  # 🔗 [Promtail 연관 - 핵심]: promtail-config.yml의 clients.url과 일치해야 함
+  #    - Promtail URL: http://loki:3100/loki/api/v1/push
+  #    - 이 포트로 로그 데이터를 수신함
+  # 🔗 [Grafana 연관]: Grafana 데이터소스 URL과 일치해야 함
   http_listen_port: 3100
+
+  # gRPC 포트 (Loki 내부 컴포넌트 간 통신용)
+  # - Distributor, Ingester, Querier 등 내부 통신에 사용
+  # - 단일 인스턴스 모드에서는 덜 중요하지만 클러스터 모드에서 필수
   grpc_listen_port: 9096
+
+  # 로그 레벨 (debug, info, warn, error)
+  # - debug: 상세한 디버깅 정보 포함
+  # - info: 일반적인 운영 정보
   log_level: info
 
+# -----------------------------------------------------------------------------
+# 🏠 공통 설정 (Common Configuration)
+# -----------------------------------------------------------------------------
+# Loki의 모든 컴포넌트에 적용되는 공통 설정
 common:
+  # 이 Loki 인스턴스의 주소 (클러스터 내 식별용)
+  # - 127.0.0.1: 로컬 환경 (단일 인스턴스)
+  # - 프로덕션에서는 실제 IP 또는 호스트명 사용
   instance_addr: 127.0.0.1
+
+  # 데이터 저장 경로의 기본 prefix
+  # - 모든 하위 디렉토리는 이 경로 아래에 생성됨
+  # 🔗 [Docker 연관]: docker-compose.yml의 볼륨 마운트와 일치해야 함
+  #    - volumes: loki-data:/loki
   path_prefix: /loki
+
+  # 저장소 설정
   storage:
+    # 파일 시스템 기반 저장소 (로컬 개발용)
+    # - 프로덕션에서는 S3, GCS, Azure Blob 등 사용 권장
     filesystem:
+      # 로그 청크(chunk) 저장 디렉토리
+      # - 실제 로그 데이터가 저장되는 위치
       chunks_directory: /loki/chunks
+
+      # 알림 규칙(alerting rules) 저장 디렉토리
       rules_directory: /loki/rules
+
+  # 복제 계수 (데이터 복제본 수)
+  # - 1: 복제 없음 (로컬 개발용)
+  # - 프로덕션에서는 3 권장 (고가용성을 위해)
+  # 🔗 [Promtail 연관]: 복제 계수가 높으면 Promtail에서 전송한 데이터의
+  #    신뢰성이 향상되지만, 저장 공간이 더 필요함
   replication_factor: 1
+
+  # 해시 링(Hash Ring) 설정
+  # - Loki 컴포넌트들의 분산 처리를 위한 설정
   ring:
     kvstore:
+      # 키-값 저장소 타입
+      # - inmemory: 메모리 내 저장 (단일 인스턴스용)
+      # - consul, etcd: 분산 저장소 (클러스터 환경용)
       store: inmemory
 
+# -----------------------------------------------------------------------------
+# 📊 스키마 설정 (Schema Configuration)
+# -----------------------------------------------------------------------------
+# 로그 데이터의 인덱싱 및 저장 스키마 정의
+# 🔗 [Promtail 연관 - 중요]: Promtail에서 전송한 로그가 이 스키마에 따라 저장됨
+#    - Promtail의 라벨(labels)이 여기서 정의된 인덱스 방식으로 저장됨
 schema_config:
   configs:
+    # 스키마 적용 시작 날짜 (이 날짜부터 해당 스키마 사용)
     - from: 2024-01-01
+
+      # 인덱스 저장소 타입
+      # - tsdb: Time Series Database (권장, 성능 우수)
+      # - boltdb-shipper: 이전 버전 방식
       store: tsdb
+
+      # 오브젝트 저장소 타입
+      # - filesystem: 로컬 파일 시스템
+      # - s3, gcs, azure: 클라우드 스토리지
       object_store: filesystem
+
+      # 스키마 버전 (v13이 최신)
+      # - 새 버전은 더 나은 압축률과 쿼리 성능 제공
       schema: v13
+
+      # 인덱스 설정
       index:
+        # 인덱스 파일 접두사
         prefix: index_
+
+        # 인덱스 파일 생성 주기
+        # - 24h: 하루 단위로 인덱스 파일 생성
+        # - 쿼리 성능과 저장 효율성의 균형점
         period: 24h
 
+# -----------------------------------------------------------------------------
+# 💾 저장소 상세 설정 (Storage Configuration)
+# -----------------------------------------------------------------------------
+# 데이터 저장 방식의 세부 설정
 storage_config:
+  # TSDB Shipper 설정 (tsdb 스토어 사용 시)
   tsdb_shipper:
+    # 활성 인덱스 저장 디렉토리
+    # - 현재 쓰기 중인 인덱스가 저장되는 위치
     active_index_directory: /loki/tsdb-index
+
+    # 인덱스 캐시 위치
+    # - 자주 조회되는 인덱스를 캐시하여 쿼리 성능 향상
     cache_location: /loki/tsdb-cache
+
+    # 캐시 유지 시간
+    # - 24시간 동안 캐시 유지
     cache_ttl: 24h
+
+  # 파일 시스템 저장소 설정
   filesystem:
+    # 청크 데이터 저장 디렉토리
+    # - 실제 로그 내용이 압축되어 저장되는 위치
     directory: /loki/chunks
 
+# -----------------------------------------------------------------------------
+# 📥 Ingester 설정 (로그 수신 및 처리)
+# -----------------------------------------------------------------------------
+# Ingester: Promtail로부터 로그를 받아 처리하고 저장하는 컴포넌트
+# 🔗 [Promtail 연관 - 핵심]: Promtail이 전송한 로그를 직접 처리하는 컴포넌트
 ingester:
+  # WAL (Write-Ahead Log) 설정
+  # - 데이터 유실 방지를 위한 선기록 로그
   wal:
+    # WAL 활성화 여부
+    # - true: 시스템 장애 시 데이터 복구 가능
     enabled: true
+
+    # WAL 파일 저장 디렉토리
     dir: /loki/wal
+
+  # 라이프사이클러 설정 (Ingester 상태 관리)
   lifecycler:
     ring:
       kvstore:
+        # 해시 링 저장소 (단일 인스턴스이므로 inmemory)
         store: inmemory
+      # 복제 계수 (common 섹션과 일치해야 함)
       replication_factor: 1
+
+  # 청크 유휴 시간
+  # - 새 로그가 없으면 이 시간 후 청크를 플러시
+  # 🔗 [Promtail 연관]: Promtail의 batchwait 보다 충분히 커야 함
+  #    - Promtail batchwait: 1s → chunk_idle_period: 1h (충분한 여유)
   chunk_idle_period: 1h
+
+  # 청크 최대 수명
+  # - 이 시간이 지나면 강제로 청크를 플러시
+  # - 메모리 사용량 제어에 중요
   max_chunk_age: 1h
+
+  # 청크 목표 크기 (바이트)
+  # - 1048576 = 1MB
+  # - 이 크기에 도달하면 청크를 플러시
+  # 🔗 [Promtail 연관]: Promtail의 batchsize(1MB)와 유사하게 설정됨
   chunk_target_size: 1048576
+
+  # 청크 보존 기간
+  # - 플러시 후 이 기간 동안 메모리에 유지
+  # - 최근 로그 쿼리 성능 향상
   chunk_retain_period: 30s
 
+# -----------------------------------------------------------------------------
+# 🗜️ Compactor 설정 (데이터 압축 및 정리)
+# -----------------------------------------------------------------------------
+# 오래된 데이터 정리 및 인덱스 최적화 담당
 compactor:
+  # 작업 디렉토리
   working_directory: /loki/compactor
+
+  # 압축 실행 주기
+  # - 10분마다 압축 작업 실행
   compaction_interval: 10m
+
+  # 보존 정책 활성화
+  # - true: limits_config의 retention_period 적용
+  # 🔗 [Promtail 연관]: Promtail이 전송한 오래된 로그가 이 설정에 따라 삭제됨
   retention_enabled: true
+
+  # 삭제 지연 시간
+  # - 보존 기간 만료 후 실제 삭제까지 대기 시간
+  # - 실수로 삭제된 데이터 복구 여유 시간
   retention_delete_delay: 2h
+
+  # 삭제 작업자 수
+  # - 병렬로 삭제 작업을 수행할 워커 수
   retention_delete_worker_count: 150
 
+# -----------------------------------------------------------------------------
+# ⚙️ 제한 설정 (Limits Configuration)
+# -----------------------------------------------------------------------------
+# 리소스 사용량 및 쿼리 제한
+# 🔗 [Promtail 연관 - 중요]: Promtail의 전송 속도와 밀접하게 관련됨
 limits_config:
+  # 초당 인제스트 속도 제한 (MB)
+  # - Promtail로부터 받을 수 있는 최대 속도
+  # 🔗 [Promtail 연관 - 핵심]: Promtail의 batchsize / batchwait ≤ 이 값
+  #    - Promtail: 1MB / 1s = 1MB/s (10MB/s 제한 내)
   ingestion_rate_mb: 10
+
+  # 인제스트 버스트 크기 (MB)
+  # - 순간적으로 허용되는 최대 인제스트 크기
+  # 🔗 [Promtail 연관]: Promtail의 batchsize(1MB)보다 커야 함
   ingestion_burst_size_mb: 20
+
+  # 사용자당 최대 스트림 수
+  # - 스트림 = 고유한 라벨 조합
+  # 🔗 [Promtail 연관 - 중요]: Promtail의 labels 조합 수가 이를 초과하면 안됨
+  #    - job, env, instance, log_type, level 등의 조합 수 제한
   max_streams_per_user: 10000
+
+  # 단일 로그 라인 최대 크기
+  # 🔗 [Promtail 연관 - 핵심]: Promtail에서 전송하는 로그 라인이 이를 초과하면 거부됨
+  #    - 스택 트레이스 등 긴 로그 라인 고려
   max_line_size: 256kb
+
+  # 오래된 샘플 거부 여부
+  # - true: 타임스탬프가 너무 오래된 로그 거부
+  # 🔗 [Promtail 연관]: Promtail이 지연되어 전송하는 로그가 거부될 수 있음
   reject_old_samples: true
+
+  # 오래된 샘플 최대 허용 시간
+  # - 168h = 7일 이전의 로그는 거부
+  # 🔗 [Promtail 연관]: Promtail 장애 복구 시 7일 이내 로그만 전송 가능
   reject_old_samples_max_age: 168h  # 7일
+
+  # 로그 보존 기간
+  # - 168h = 7일 (로컬 테스트용, 프로덕션에서는 더 길게)
+  # - 이 기간이 지난 로그는 compactor에 의해 삭제됨
   retention_period: 168h            # 7일 (로컬 테스트용)
+
+  # 쿼리 병렬 처리 수
+  # - 단일 쿼리가 사용할 수 있는 최대 병렬 처리 수
   max_query_parallelism: 32
+
+  # 쿼리 결과 최대 시리즈 수
+  # - 단일 쿼리가 반환할 수 있는 최대 시계열 수
   max_query_series: 10000
 
+# -----------------------------------------------------------------------------
+# 🔍 쿼리 범위 설정 (Query Range)
+# -----------------------------------------------------------------------------
+# 범위 쿼리(시간 범위 쿼리) 최적화 설정
 query_range:
+  # 샤딩 가능한 쿼리의 병렬 처리 활성화
+  # - 대용량 쿼리를 여러 조각으로 나눠 병렬 처리
   parallelise_shardable_queries: true
+
+  # 쿼리 결과 캐싱 활성화
+  # - 동일한 쿼리 재실행 시 캐시된 결과 반환
   cache_results: true
+
+  # 결과 캐시 설정
   results_cache:
     cache:
+      # 내장 캐시 설정 (단일 인스턴스용)
       embedded_cache:
         enabled: true
+        # 캐시 최대 크기 (MB)
         max_size_mb: 100
 
+# -----------------------------------------------------------------------------
+# 📢 Ruler 설정 (알림 규칙)
+# -----------------------------------------------------------------------------
+# 알림 및 녹화 규칙 평가 담당
 ruler:
+  # Alertmanager URL (비어있으면 알림 비활성화)
+  # - 로컬 개발 환경에서는 보통 비활성화
   alertmanager_url: ""
+
+  # 규칙 저장소 설정
   storage:
+    # 저장소 타입 (local: 로컬 파일 시스템)
     type: local
     local:
+      # 규칙 파일 저장 디렉토리
       directory: /loki/rules
+
+  # 규칙 임시 파일 경로
   rule_path: /loki/rules-temp
+
+  # 규칙 API 활성화
+  # - HTTP API를 통한 규칙 관리 가능
   enable_api: true
 
+# -----------------------------------------------------------------------------
+# 📈 분석 설정
+# -----------------------------------------------------------------------------
 analytics:
+  # 익명 사용 통계 전송 비활성화
+  # - false: Grafana Labs로 사용 통계 전송 안함
   reporting_enabled: false
