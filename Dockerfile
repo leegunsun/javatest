@@ -81,11 +81,11 @@ RUN ./gradlew build -x test --no-daemon
 # JDK가 아닌 JRE만 포함된 경량 이미지 사용
 # ============================================================================
 
-# Eclipse Temurin JRE 17 (Alpine Linux 기반)
+# Eclipse Temurin JRE 17
 # - Temurin: Eclipse 재단에서 관리하는 오픈소스 JDK/JRE
-# - Alpine: 경량 Linux 배포판 (~5MB)
 # - JRE: 실행만 가능 (컴파일 도구 미포함) -> 이미지 크기 감소
-FROM eclipse-temurin:17-jre-alpine
+# - jammy: Ubuntu 22.04 기반 (multi-platform 지원)
+FROM eclipse-temurin:17-jre-jammy
 
 # 작업 디렉토리 설정
 WORKDIR /app
@@ -96,11 +96,13 @@ WORKDIR /app
 # 컨테이너를 root로 실행하면 보안 위험이 있음
 # 권한이 제한된 전용 사용자로 애플리케이션 실행
 #
-# -r: 시스템 계정 생성 (로그인 불가)
-# -g appgroup: 지정된 그룹에 소속
+# --system: 시스템 계정 생성 (로그인 불가)
+# --group: 동일 이름의 그룹도 생성
 # appuser: 사용자 이름
 # ----------------------------------------------------------------------------
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system appgroup && useradd --system --gid appgroup appuser
 
 # ----------------------------------------------------------------------------
 # JAR 파일 복사
@@ -141,7 +143,7 @@ EXPOSE 8082
 # Spring Boot Actuator의 health 엔드포인트 사용
 # ----------------------------------------------------------------------------
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8082/actuator/health || exit 1
+    CMD curl -f http://localhost:8082/actuator/health || exit 1
 
 # ----------------------------------------------------------------------------
 # JVM 최적화 옵션

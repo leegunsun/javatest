@@ -1,21 +1,4 @@
 {
-    "com.example.open.domain.auth.controller.AuthController": {
-        "tag": {
-            "name": "auth",
-            "description": "\uc778\uc99d \uad00\ub9ac API"
-        },
-        "methods": {
-            "login": {
-                "date": "2025-07-22"
-            },
-            "logout": {
-                "date": "2025-07-22"
-            },
-            "getAuthStatus": {
-                "date": "2025-07-22"
-            }
-        }
-    },
     "com.example.open.domain.order.controller.OrderController": {
         "tag": {
             "name": "Order",
@@ -35,6 +18,23 @@
         "methods": {
             "subscribe": {
                 "date": "2025-12-01"
+            }
+        }
+    },
+    "com.example.open.domain.auth.controller.AuthController": {
+        "tag": {
+            "name": "auth",
+            "description": "\uc778\uc99d \uad00\ub9ac API"
+        },
+        "methods": {
+            "login": {
+                "date": "2025-07-22"
+            },
+            "logout": {
+                "date": "2025-07-22"
+            },
+            "getAuthStatus": {
+                "date": "2025-07-22"
             }
         }
     },
